@@ -1,0 +1,121 @@
+[
+  {
+    "blueprint_code": "BLUEPRINT-OFFICE-10",
+    "tier_name": "Startup Office (up to 10 seats)",
+    "base_estimated_cost": 2400,
+    "network_architecture": {
+      "zones": [
+        {"id": "wan", "name": "Internet", "vlan": null, "purpose": "Public network", "egress": "open"},
+        {"id": "fw", "name": "Perimeter firewall", "vlan": null, "purpose": "Stateful filtering", "egress": "restricted"},
+        {"id": "office", "name": "Office LAN", "vlan": 10, "purpose": "Staff workstations", "egress": "restricted"}
+      ],
+      "links": [
+        {"from": "wan", "to": "fw", "policy": "Inbound blocked by default"},
+        {"from": "fw", "to": "office", "policy": "Outbound web allowed through filtering"}
+      ]
+    },
+    "hardware_bom": [
+      {"item": "24-port managed switch", "quantity": 1},
+      {"item": "Wi-Fi 6 access point", "quantity": 2},
+      {"item": "Patch panel 24-port", "quantity": 1},
+      {"item": "UPS 1500VA", "quantity": 1},
+      {"item": "Perimeter firewall", "quantity": 1}
+    ],
+    "recommended_software_integrations": ["File sharing", "Print services", "Endpoint backup"]
+  },
+  {
+    "blueprint_code": "BLUEPRINT-OFFICE-25",
+    "tier_name": "Growing Office (11–25 seats)",
+    "base_estimated_cost": 4000,
+    "network_architecture": {
+      "zones": [
+        {"id": "wan", "name": "Internet", "vlan": null, "purpose": "Public network", "egress": "open"},
+        {"id": "fw", "name": "Perimeter firewall", "vlan": null, "purpose": "Stateful filtering and egress control", "egress": "restricted"},
+        {"id": "office", "name": "Office LAN", "vlan": 10, "purpose": "Staff workstations", "egress": "restricted"},
+        {"id": "servers", "name": "Core services", "vlan": 20, "purpose": "File, auth and application servers", "egress": "restricted"}
+      ],
+      "links": [
+        {"from": "wan", "to": "fw", "policy": "Inbound blocked by default"},
+        {"from": "fw", "to": "office", "policy": "Outbound web allowed through filtering"},
+        {"from": "office", "to": "servers", "policy": "Application ports only"}
+      ]
+    },
+    "hardware_bom": [
+      {"item": "24-port managed switch", "quantity": 2},
+      {"item": "Wi-Fi 6 access point", "quantity": 4},
+      {"item": "Patch panel 24-port", "quantity": 2},
+      {"item": "UPS 3000VA", "quantity": 1},
+      {"item": "Perimeter firewall", "quantity": 1},
+      {"item": "12U rack", "quantity": 1}
+    ],
+    "recommended_software_integrations": ["Directory service", "File sharing", "Video conferencing QoS"]
+  },
+  {
+    "blueprint_code": "BLUEPRINT-AIRGAP-25",
+    "tier_name": "Air-Gapped AI Office (up to 25 seats)",
+    "base_estimated_cost": 6500,
+    "network_architecture": {
+      "zones": [
+        {"id": "wan", "name": "Internet", "vlan": null, "purpose": "Public network", "egress": "open"},
+        {"id": "fw", "name": "Perimeter firewall", "vlan": null, "purpose": "Stateful filtering and egress control", "egress": "restricted"},
+        {"id": "office", "name": "Office LAN", "vlan": 10, "purpose": "Staff workstations", "egress": "restricted"},
+        {"id": "servers", "name": "Core services", "vlan": 20, "purpose": "File, auth and application servers", "egress": "restricted"},
+        {"id": "ai", "name": "AI inference", "vlan": 30, "purpose": "Local GPU inference node", "egress": "none"},
+        {"id": "mgmt", "name": "Management", "vlan": 99, "purpose": "Switch, AP and rack administration", "egress": "none"}
+      ],
+      "links": [
+        {"from": "wan", "to": "fw", "policy": "Inbound blocked by default; only approved services allowed"},
+        {"from": "fw", "to": "office", "policy": "Outbound web allowed through filtering"},
+        {"from": "office", "to": "servers", "policy": "Application ports only"},
+        {"from": "office", "to": "ai", "policy": "HTTPS 443 to the inference gateway only"},
+        {"from": "servers", "to": "ai", "policy": "Internal API calls over mutual TLS"},
+        {"from": "ai", "to": "wan", "policy": "DENY all outbound traffic"},
+        {"from": "mgmt", "to": "fw", "policy": "Admin access from jump host only"}
+      ]
+    },
+    "hardware_bom": [
+      {"item": "24-port managed switch", "quantity": 2},
+      {"item": "Wi-Fi 6 access point", "quantity": 4},
+      {"item": "Patch panel 24-port", "quantity": 2},
+      {"item": "UPS 3000VA", "quantity": 1},
+      {"item": "Perimeter firewall", "quantity": 1},
+      {"item": "12U rack", "quantity": 1},
+      {"item": "GPU inference node", "quantity": 1, "notes": "Quoted separately in production"}
+    ],
+    "recommended_software_integrations": ["Local inference gateway", "Directory service", "Offline backups"]
+  },
+  {
+    "blueprint_code": "BLUEPRINT-ENTERPRISE-100",
+    "tier_name": "Enterprise Air-Gapped AI Facility (up to 100 seats)",
+    "base_estimated_cost": 12000,
+    "network_architecture": {
+      "zones": [
+        {"id": "wan", "name": "Internet", "vlan": null, "purpose": "Public network", "egress": "open"},
+        {"id": "fw", "name": "Perimeter firewall cluster", "vlan": null, "purpose": "Stateful filtering and egress control", "egress": "restricted"},
+        {"id": "office", "name": "Office LAN", "vlan": 10, "purpose": "Staff workstations", "egress": "restricted"},
+        {"id": "servers", "name": "Core services", "vlan": 20, "purpose": "File, auth and application servers", "egress": "restricted"},
+        {"id": "ai", "name": "AI inference", "vlan": 30, "purpose": "Local GPU inference cluster", "egress": "none"},
+        {"id": "mgmt", "name": "Management", "vlan": 99, "purpose": "Switch, AP and rack administration", "egress": "none"}
+      ],
+      "links": [
+        {"from": "wan", "to": "fw", "policy": "Inbound blocked by default; only approved services allowed"},
+        {"from": "fw", "to": "office", "policy": "Outbound web allowed through filtering"},
+        {"from": "office", "to": "servers", "policy": "Application ports only"},
+        {"from": "office", "to": "ai", "policy": "HTTPS 443 to the inference gateway only"},
+        {"from": "servers", "to": "ai", "policy": "Internal API calls over mutual TLS"},
+        {"from": "ai", "to": "wan", "policy": "DENY all outbound traffic"},
+        {"from": "mgmt", "to": "fw", "policy": "Admin access from jump host only"}
+      ]
+    },
+    "hardware_bom": [
+      {"item": "48-port managed switch", "quantity": 2},
+      {"item": "Wi-Fi 6 access point", "quantity": 10},
+      {"item": "Patch panel 48-port", "quantity": 2},
+      {"item": "UPS 6000VA", "quantity": 2},
+      {"item": "Perimeter firewall cluster", "quantity": 1},
+      {"item": "42U rack", "quantity": 2},
+      {"item": "GPU inference node", "quantity": 2, "notes": "Quoted separately in production"}
+    ],
+    "recommended_software_integrations": ["Local inference gateway", "Directory service", "Offline backups", "Monitoring"]
+  }
+]

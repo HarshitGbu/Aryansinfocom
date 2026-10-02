@@ -1,0 +1,38 @@
+[
+  {
+    "slug": "web-apps",
+    "title": "Custom Web Applications",
+    "category": "web",
+    "short_description": "Microservices, scalable frontends and high-concurrency backends for portals and SaaS.",
+    "technologies_used": ["Python", "TypeScript", "Postgres", "Redis", "Docker"],
+    "is_featured": true,
+    "sort_order": 1
+  },
+  {
+    "slug": "erp-systems",
+    "title": "Enterprise ERP Systems",
+    "category": "erp",
+    "short_description": "Modular ERPs with CRM and supply-chain integration, legacy migration and API bridges.",
+    "technologies_used": ["Python", "Postgres", "Celery", "REST"],
+    "is_featured": true,
+    "sort_order": 2
+  },
+  {
+    "slug": "ai-solutions",
+    "title": "Bespoke AI Tools",
+    "category": "ai",
+    "short_description": "Fine-tuned LLMs, custom RAG pipelines, agentic workflows and AI injection.",
+    "technologies_used": ["Python", "pgvector", "LLMs", "RAG"],
+    "is_featured": true,
+    "sort_order": 3
+  },
+  {
+    "slug": "infrastructure",
+    "title": "Hardware and Office Networking",
+    "category": "infrastructure",
+    "short_description": "Structured cabling, enterprise Wi-Fi, local GPU racks, air-gapped compute and workstations.",
+    "technologies_used": ["Cabling", "Wi-Fi 6", "Firewalls", "GPU racks"],
+    "is_featured": false,
+    "sort_order": 4
+  }
+]

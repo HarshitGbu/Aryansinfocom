@@ -1,0 +1,26 @@
+name: ci
+on: [push, pull_request]
+jobs:
+  lint-type-test:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_USER: app
+          POSTGRES_PASSWORD: app
+          POSTGRES_DB: agency
+        ports: ["5432:5432"]
+        options: --health-cmd="pg_isready -U app" --health-interval=5s --health-retries=10
+      redis:
+        image: redis:7-alpine
+        ports: ["6379:6379"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+      - run: uv sync --group dev
+      - run: uv run ruff check app tests
+      - run: uv run mypy app
+      - run: uv run pytest -q
+      - run: uv run python -m app.openapi_dump && git diff --exit-code docs/openapi.json
+      - run: uv pip audit || pip-audit || echo "audit skipped"

@@ -1,0 +1,15 @@
+from __future__ import annotations
+
+from pathlib import Path
+
+DATA = Path(__file__).parent / "data"
+
+
+def _md(service: str, title: str) -> str:
+    bodies = {
+        "web-apps": "## What we build\n\nWe build custom web applications with microservices, scalable frontends, and high-concurrency backends. Typical builds include customer portals, operations dashboards, and multi-tenant SaaS.\n\n## How we deliver\n\nWe work in weekly milestones with a staging link from week one. Each milestone includes automated tests and a short demo.\n\n- Discovery and scope lock in week one\n- API-first builds with typed contracts\n\n## Typical outcomes\n\n- Faster page loads and fewer production incidents\n- Clear ownership of each service\n\n## Technology\n\n- Python, TypeScript, Postgres, Redis\n- Docker and CI for every change\n\n## What you need to provide\n\n- A product contact and sample data\n- Access to existing systems for integration\n",
+        "erp-systems": "## What we build\n\nWe build modular ERPs with CRM and supply-chain integration, legacy migration, and API bridges. Modules cover inventory, orders, billing, and reporting.\n\n## How we deliver\n\nWe map current spreadsheets and tools first, then replace them module by module. Data migration is tested twice before cutover.\n\n- Fit-gap review and module plan\n- Parallel run before go-live\n\n## Typical outcomes\n\n- One source of truth for stock and orders\n- Fewer manual entries\n\n## Technology\n\n- Python, Postgres, message queues\n- Role-based access and audit logs\n\n## What you need to provide\n\n- Current process docs and exports\n- A finance reviewer for billing rules\n",
+        "ai-solutions": "## What we build\n\nWe build fine-tuned LLMs, custom RAG pipelines, agentic workflows, and AI injection into existing software. Every build includes evaluation and guardrails.\n\n## How we deliver\n\nWe start with a small grounded pilot on your documents. We measure retrieval quality before any production rollout.\n\n- Pilot on 20 to 50 sample documents\n- Human review of edge cases\n\n## Typical outcomes\n\n- Shorter search time across documents\n- Draft answers with cited sources\n\n## Technology\n\n- Embeddings, pgvector, retrieval pipelines\n- Model gateways with audit logs\n\n## What you need to provide\n\n- Sample documents and access rules\n- Reviewers for accuracy checks\n",
+        "infrastructure": "## What we build\n\nWe deliver structured cabling, enterprise Wi-Fi and networks, local GPU racks, air-gapped compute, and workstation provisioning. Each site includes diagrams and test reports.\n\n## How we deliver\n\nWe survey the site, then install in zones with labeled patching. Every handover includes cable maps and Wi-Fi heatmaps.\n\n- Site survey and bill of materials\n- Staged install with minimal downtime\n\n## Typical outcomes\n\n- Stable Wi-Fi and clear cable runs\n- Documented racks and backups\n\n## Technology\n\n- Managed switches, firewalls, access points\n- UPS, racks, and patch panels\n\n## What you need to provide\n\n- Floor plans and access windows\n- A facilities contact on site\n",
+    }
+    return bodies[service]

@@ -1,0 +1,33 @@
+{
+  "version": "2026-10-v1",
+  "currency": "USD",
+  "rounding": 50,
+  "software": {
+    "services": {
+      "custom_web": {"cost": [4000, 5500], "weeks": [3, 4]},
+      "erp_custom": {"cost": [6000, 7500], "weeks": [3, 5]},
+      "ai_solutions": {"cost": [4000, 8000], "weeks": [3, 5]}
+    },
+    "per_user_role": [125, 250],
+    "per_integration": [750, 1000]
+  },
+  "hardware": {
+    "office_networking": {"base": [1000, 1500], "per_workstation": [40, 60], "per_100_sqft": [20, 30], "weeks": [2, 3]},
+    "server_rack": {"cost": [1300, 1950]},
+    "workstation_provisioning": {"per_workstation": [60, 90], "weeks": [1, 1]}
+  },
+  "on_prem_ai": {
+    "local_ai_server": {"cost": [1500, 3000], "weeks": [1, 2]},
+    "air_gap_hardening": {"cost": [1000, 2000], "weeks": [1, 1]}
+  },
+  "timeline": {
+    "integration_buffer_weeks": [0, 1],
+    "extra_buffer_per_integration_over": {"threshold": 2, "weeks": [0, 1]}
+  },
+  "blueprints": {
+    "office_small": "BLUEPRINT-OFFICE-10",
+    "office_mid": "BLUEPRINT-OFFICE-25",
+    "airgap_standard": "BLUEPRINT-AIRGAP-25",
+    "enterprise": "BLUEPRINT-ENTERPRISE-100"
+  }
+}
