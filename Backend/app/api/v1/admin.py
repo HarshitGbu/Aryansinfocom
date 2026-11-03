@@ -1,15 +1,18 @@
 from __future__ import annotations
 
+import uuid
+from typing import get_args
+
 from fastapi import APIRouter, Depends, Request
-from fastapi.responses import JSONResponse
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.db import get_db
-from app.core.security import require_admin
+from app.core.security import error_response, require_admin
+from app.schemas.requests import AdminPatchRequest, LeadStatus
 
 router = APIRouter(tags=["admin"])
-VALID_STATUS = ("new", "contacted", "discovery_booked", "closed")
+VALID_STATUS = get_args(LeadStatus)
 
 
 @router.get("/admin/leads")
@@ -19,14 +22,9 @@ async def list_leads(
     try:
         require_admin(request)
     except Exception:
-        return JSONResponse(
-            status_code=401, content={"success": False, "error": {"code": "unauthorized", "message": "unauthorized"}}
-        )
+        return error_response(401, "unauthorized", "unauthorized")
     if status is not None and status not in VALID_STATUS:
-        return JSONResponse(
-            status_code=422,
-            content={"success": False, "error": {"code": "validation_error", "message": "Invalid status"}},
-        )
+        return error_response(422, "validation_error", "Invalid status")
     from app.models.tables import LeadEstimate
 
     q = select(LeadEstimate).order_by(LeadEstimate.created_at.desc())
@@ -54,26 +52,20 @@ async def patch_lead(lead_id: str, request: Request, db: AsyncSession = Depends(
     try:
         require_admin(request)
     except Exception:
-        return JSONResponse(
-            status_code=401, content={"success": False, "error": {"code": "unauthorized", "message": "unauthorized"}}
-        )
+        return error_response(401, "unauthorized", "unauthorized")
     try:
-        body = await request.json()
+        patch = AdminPatchRequest.model_validate(await request.json())
     except Exception:
-        body = {}
-    st = body.get("status")
-    if st not in VALID_STATUS:
-        return JSONResponse(
-            status_code=422,
-            content={"success": False, "error": {"code": "validation_error", "message": "Invalid status"}},
-        )
+        return error_response(422, "validation_error", "Invalid status")
+    try:
+        lead_uuid = uuid.UUID(lead_id)
+    except ValueError:
+        return error_response(422, "validation_error", "Invalid lead id")
     from app.models.tables import LeadEstimate
 
-    row = await db.get(LeadEstimate, lead_id)  # type: ignore[arg-type]
+    row = await db.get(LeadEstimate, lead_uuid)
     if row is None:
-        return JSONResponse(
-            status_code=404, content={"success": False, "error": {"code": "not_found", "message": "Not found"}}
-        )
-    row.status = st  # type: ignore[assignment]
+        return error_response(404, "not_found", "Not found")
+    row.status = patch.status
     await db.commit()
     return {"success": True, "lead": {"id": str(row.id), "status": row.status}}

@@ -23,18 +23,19 @@ LIMITS: dict[str, tuple[int, int]] = {
 _mem: dict[str, list[float]] = {}
 
 
-def _match_limit(path: str) -> tuple[int, int] | None:
+def _match_limit(path: str) -> tuple[str, int, int] | None:
     # longest prefix match; health/webhooks excluded
     if path in ("/health", "/api/v1/health", "/health/ready", "/api/v1/health/ready"):
         return None
     if path.startswith("/api/v1/webhooks/"):
         return None
-    best: tuple[int, int] | None = None
+    best: tuple[str, int, int] | None = None
     best_len = -1
     for prefix, lim in LIMITS.items():
-        if path == prefix or path.startswith(prefix.rstrip("/") + "/") or path.startswith(prefix):
+        # exact match or segment-boundary match only (no /api/v1/searchXYZ over-match)
+        if path == prefix or path.startswith(prefix.rstrip("/") + "/"):
             if len(prefix) > best_len:
-                best = lim
+                best = (prefix, lim[0], lim[1])
                 best_len = len(prefix)
     return best
 
@@ -49,13 +50,15 @@ async def rate_limit_middleware(request: Request, call_next):  # type: ignore[no
 
     path = request.url.path
     # strip nothing; match directly
-    lim = _match_limit(path)
-    if lim is None:
+    matched = _match_limit(path)
+    if matched is None:
         return await call_next(request)
-    limit, window = lim
+    prefix, limit, window = matched
     # special: rag also has daily 100/day
     ip = client_ip(request)
-    key = f"rl:{path}:{ip}"
+    # bucket by the matched config prefix so a shared prefix budget is real
+    # (e.g. /api/v1/services and /api/v1/services/{slug} share one budget)
+    key = f"rl:{prefix}:{ip}"
     now = time.time()
     redis = get_redis_client()
     remaining = limit
@@ -63,24 +66,29 @@ async def rate_limit_middleware(request: Request, call_next):  # type: ignore[no
     allowed = True
     if redis is not None:
         try:
-            # sliding window via sorted set
+            # sliding window via sorted set: check first, record only when allowed
+            # so rejected requests do not extend the window
             member = f"{now}:{ip}"
             pipe = redis.pipeline()
             pipe.zremrangebyscore(key, 0, now - window)
-            pipe.zadd(key, {member: now})
             pipe.zcard(key)
-            pipe.expire(key, window + 5)
             res = await pipe.execute()
-            count = int(res[2])
-            remaining = max(0, limit - count)
-            if count > limit:
+            count = int(res[1])
+            if count >= limit:
                 allowed = False
+                remaining = 0
                 # oldest within window
                 oldest = await redis.zrange(key, 0, 0, withscores=True)
                 if oldest:
                     retry_after = int(max(1, window - (now - float(oldest[0][1]))))
                 else:
                     retry_after = window
+            else:
+                rec = redis.pipeline()
+                rec.zadd(key, {member: now})
+                rec.expire(key, window + 5)
+                await rec.execute()
+                remaining = max(0, limit - count - 1)
         except Exception:
             redis = None  # fall through to fail-open/closed
     if redis is None:
@@ -115,15 +123,10 @@ async def rate_limit_middleware(request: Request, call_next):  # type: ignore[no
             resp.headers["X-RateLimit-Limit"] = str(limit)
             resp.headers["X-RateLimit-Remaining"] = str(limit)
             return resp
-        # in-memory fallback (dev/test)
-        lst = _mem.get(key, [])
-        lst = [t for t in lst if t > now - window]
-        lst.append(now)
-        _mem[key] = lst
-        count = len(lst)
-        remaining = max(0, limit - count)
-        if count > limit:
-            retry_after = int(max(1, window - (now - lst[0])))
+        # in-memory fallback (dev/test): check first, record only when allowed
+        lst = [t for t in _mem.get(key, []) if t > now - window]
+        if len(lst) >= limit:
+            retry_after = int(max(1, window - (now - lst[0]))) if lst else window
             return JSONResponse(
                 status_code=429,
                 content={
@@ -140,6 +143,9 @@ async def rate_limit_middleware(request: Request, call_next):  # type: ignore[no
                     "X-RateLimit-Remaining": "0",
                 },
             )
+        lst.append(now)
+        _mem[key] = lst
+        remaining = max(0, limit - len(lst))
         resp = await call_next(request)
         resp.headers["X-RateLimit-Limit"] = str(limit)
         resp.headers["X-RateLimit-Remaining"] = str(remaining)

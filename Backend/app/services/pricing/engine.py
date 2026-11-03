@@ -26,10 +26,6 @@ def round50(x: int, base: int = 50) -> int:
     return int(math.floor((x + base / 2) / base) * base)
 
 
-def _pair(p: list) -> tuple[int, int]:
-    return int(p[0]), int(p[1])
-
-
 def validate_estimate_input(data: dict) -> dict[str, list[str]]:
     """Return field errors; empty means valid. Used by API to build 422 details."""
     errors: dict[str, list[str]] = {}
@@ -141,42 +137,25 @@ def calculate(pricing: dict, req: dict) -> dict:
     sw_min_r, sw_max_r = round50(sw_min, rnd), round50(sw_max, rnd)
     hw_min_r, hw_max_r = round50(hw_min, rnd), round50(hw_max, rnd)
     ai_min_r, ai_max_r = round50(ai_min, rnd), round50(ai_max, rnd)
-    total_min = (
-        (sw_min_r if has_software or sw_min or sw_max else 0)
-        + (hw_min_r if has_hw_line else 0)
-        + (ai_min_r if has_ai_line else 0)
-    )
-    total_max = (
-        (sw_max_r if has_software or sw_min or sw_max else 0)
-        + (hw_max_r if has_hw_line else 0)
-        + (ai_max_r if has_ai_line else 0)
-    )
-    # edge: software line with zero? if has_software false, line excluded (0,0 rounded 0)
+    # zero out lines that don't apply, then sum once
     if not has_software:
         sw_min_r = sw_max_r = 0
     if not has_hw_line:
         hw_min_r = hw_max_r = 0
     if not has_ai_line:
         ai_min_r = ai_max_r = 0
-    total_min = sw_min_r + hw_min_r + ai_min_r if (has_software or has_hw_line or has_ai_line) else 0
-    # recompute correctly: sum rounded lines
     total_min = sw_min_r + hw_min_r + ai_min_r
     total_max = sw_max_r + hw_max_r + ai_max_r
 
     breakdown: dict = {}
-    if sw_max_r > 0 or (has_software and (sw_min_r > 0 or sw_max_r >= 0 and (sw_min > 0 or sw_max > 0 or True))):
-        # include only if max>0 per spec
-        if sw_max_r > 0:
-            breakdown["software_development"] = {"min": sw_min_r, "max": sw_max_r}
+    if sw_max_r > 0:
+        breakdown["software_development"] = {"min": sw_min_r, "max": sw_max_r}
     if hw_max_r > 0:
         breakdown["hardware_and_networking"] = {"min": hw_min_r, "max": hw_max_r}
     if ai_max_r > 0:
         breakdown["on_prem_ai_setup"] = {"min": ai_min_r, "max": ai_max_r}
 
     # 5. timeline
-    def _w(p: list) -> tuple[int, int]:
-        return int(p[0]), int(p[1])
-
     sw_wmin = sw_wmax = 0
     for s in sel:
         if s in pricing["software"]["services"]:

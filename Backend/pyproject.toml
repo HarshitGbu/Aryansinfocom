@@ -80,7 +80,9 @@ addopts = "--cov=app --cov-report=term-missing"
 [tool.coverage.run]
 omit = ["tests/*", "migrations/*"]
 [tool.coverage.report]
-fail_under = 0
+# Regression floor (measured ~64% on the full suite incl. integration).
+# Launch target is 85% — raise this as coverage grows.
+fail_under = 60
 
 [tool.alembic]
 script_location = "migrations"

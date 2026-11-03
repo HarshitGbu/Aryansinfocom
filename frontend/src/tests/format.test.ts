@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { formatRange, formatUSD, formatWeeks } from "@/lib/format";
+import { formatRange, formatUSD, formatWeeks, slugify } from "@/lib/format";
 
 describe("format", () => {
   it("formats USD", () => {
@@ -12,5 +12,9 @@ describe("format", () => {
   it("formats weeks", () => {
     expect(formatWeeks({ min: 6, max: 10 })).toBe("6–10 weeks");
     expect(formatWeeks({ min: 4, max: 4 })).toBe("4 weeks");
+  });
+  it("slugifies headings for anchors", () => {
+    expect(slugify("Delivery model")).toBe("delivery-model");
+    expect(slugify("Overview")).toBe("overview");
   });
 });

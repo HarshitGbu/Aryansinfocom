@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useEffect } from "react";
+import { Suspense, useEffect, useRef } from "react";
 import { useSearchParams } from "next/navigation";
 import { motion } from "framer-motion";
 import { useEstimatorStore, needsOffice, needsSoftware } from "@/lib/stores/estimator-store";
@@ -20,6 +20,14 @@ function WizardInner(): React.JSX.Element {
   const store = useEstimatorStore();
   const [error, setError] = useState<string | null>(null);
   const [sending, setSending] = useState(false);
+  const headingRef = useRef<HTMLHeadingElement | null>(null);
+  const lastStep = useRef<number>(store.step);
+
+  useEffect(() => {
+    if (lastStep.current === store.step) return;
+    lastStep.current = store.step;
+    headingRef.current?.focus();
+  }, [store.step]);
 
   useEffect(() => {
     const pre = params.get("services");
@@ -103,7 +111,7 @@ function WizardInner(): React.JSX.Element {
 
         {step === 1 && (
           <section aria-labelledby="s1">
-            <h2 id="s1" tabIndex={-1} className="text-2xl font-semibold">What do you need?</h2>
+            <h2 id="s1" ref={headingRef} tabIndex={-1} className="text-2xl font-semibold">What do you need?</h2>
             <div className="mt-6 grid gap-3 md:grid-cols-2">
               {allServices.map((s) => (
                 <button
@@ -125,7 +133,7 @@ function WizardInner(): React.JSX.Element {
 
         {step === 2 && showOffice && (
           <section aria-labelledby="s2">
-            <h2 id="s2" tabIndex={-1} className="text-2xl font-semibold">Office and hardware</h2>
+            <h2 id="s2" ref={headingRef} tabIndex={-1} className="text-2xl font-semibold">Office and hardware</h2>
             <label className="mt-6 block text-sm">
               Workstations: {store.office.workstations}
               <input
@@ -165,7 +173,7 @@ function WizardInner(): React.JSX.Element {
 
         {step === 3 && showSoftware && (
           <section aria-labelledby="s3">
-            <h2 id="s3" tabIndex={-1} className="text-2xl font-semibold">Software scope</h2>
+            <h2 id="s3" ref={headingRef} tabIndex={-1} className="text-2xl font-semibold">Software scope</h2>
             <label className="mt-6 block text-sm">
               User roles: {store.software.user_roles_count}
               <input
@@ -201,7 +209,7 @@ function WizardInner(): React.JSX.Element {
 
         {step === 4 && (
           <section aria-labelledby="s4">
-            <h2 id="s4" tabIndex={-1} className="text-2xl font-semibold">Review</h2>
+            <h2 id="s4" ref={headingRef} tabIndex={-1} className="text-2xl font-semibold">Review</h2>
             <ul className="mt-4 space-y-2 text-sm text-text-muted">
               <li>Services: {services.join(", ") || "—"}</li>
               {showOffice && <li>Workstations: {store.office.workstations}, {store.office.floor_area_sqft} sqft</li>}
@@ -213,7 +221,7 @@ function WizardInner(): React.JSX.Element {
 
         {step === 5 && (
           <section aria-labelledby="s5">
-            <h2 id="s5" tabIndex={-1} className="text-2xl font-semibold">Your details</h2>
+            <h2 id="s5" ref={headingRef} tabIndex={-1} className="text-2xl font-semibold">Your details</h2>
             <div className="mt-6 space-y-4">
               <label className="block text-sm">Name*
                 <input value={store.contact.client_name} onChange={(e) => store.setContact({ client_name: e.target.value })}
@@ -247,7 +255,7 @@ function WizardInner(): React.JSX.Element {
 
         {step === 6 && (
           <section aria-labelledby="s6">
-            <h2 id="s6" tabIndex={-1} className="text-2xl font-semibold">Estimate sent.</h2>
+            <h2 id="s6" ref={headingRef} tabIndex={-1} className="text-2xl font-semibold">Estimate sent.</h2>
             <p className="mt-3 text-text-muted">Book a call to confirm scope.</p>
             <div className="mt-6 flex gap-3">
               <Link

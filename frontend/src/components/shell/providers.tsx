@@ -2,6 +2,7 @@
 
 import { useEffect, useState, type ReactNode } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { MotionConfig } from "framer-motion";
 
 let client: QueryClient | null = null;
 
@@ -40,9 +41,11 @@ function LenisInit(): null {
 export function Providers({ children }: { children: ReactNode }): React.JSX.Element {
   const [qc] = useState(getClient);
   return (
-    <QueryClientProvider client={qc}>
-      <LenisInit />
-      {children}
-    </QueryClientProvider>
+    <MotionConfig reducedMotion="user">
+      <QueryClientProvider client={qc}>
+        <LenisInit />
+        {children}
+      </QueryClientProvider>
+    </MotionConfig>
   );
 }

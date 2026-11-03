@@ -34,6 +34,7 @@ export function Footer(): React.JSX.Element {
           <h2 className="mb-4 text-sm font-semibold">Contact</h2>
           <ul className="space-y-2 text-sm text-text-muted">
             <li><a href={`mailto:${siteConfig.email}`} className="hover:text-text">{siteConfig.email}</a></li>
+            <li><a href={`tel:${siteConfig.phone.replace(/\s/g, "")}`} className="hover:text-text">{siteConfig.phone}</a></li>
             <li><Link href="/contact#book" className="hover:text-text">Book Discovery Call</Link></li>
           </ul>
         </div>

@@ -3,11 +3,10 @@ from __future__ import annotations
 from datetime import UTC, datetime
 
 from fastapi import APIRouter, Request
-from fastapi.responses import JSONResponse
 from sqlalchemy import func, select
 
 from app.config import get_settings
-from app.core.security import verify_hmac
+from app.core.security import error_response, verify_hmac
 
 router = APIRouter(tags=["webhooks"])
 
@@ -19,15 +18,11 @@ async def cal_webhook(request: Request):  # type: ignore[no-untyped-def]
     log = structlog.get_logger("webhooks")
     secret = get_settings().CAL_WEBHOOK_SECRET
     if not secret:
-        return JSONResponse(
-            status_code=404, content={"success": False, "error": {"code": "not_found", "message": "Not found"}}
-        )
+        return error_response(404, "not_found", "Not found")
     raw = await request.body()
     sig = request.headers.get("x-cal-signature", "") or request.headers.get("x-signature", "") or ""
     if not verify_hmac(secret, raw, sig):
-        return JSONResponse(
-            status_code=401, content={"success": False, "error": {"code": "unauthorized", "message": "unauthorized"}}
-        )
+        return error_response(401, "unauthorized", "unauthorized")
     try:
         payload = await request.json()
     except Exception:
@@ -47,7 +42,7 @@ async def cal_webhook(request: Request):  # type: ignore[no-untyped-def]
     except Exception:
         pass
     event = str(payload.get("type", "") or payload.get("event", "")).lower()
-    is_booking = ("booking" in event) or ("created" in event) or True  # treat any verified as booking
+    is_booking = ("booking" in event) or ("created" in event)
     if email and is_booking:
         from app.core.db import get_session_factory
         from app.models.tables import LeadEstimate

@@ -1,12 +1,10 @@
 from __future__ import annotations
 
-import hashlib
-import json
-
 from fastapi import APIRouter, Depends, HTTPException, Request, Response
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.api.v1.common import etagged_json
 from app.core.db import get_db
 
 router = APIRouter(tags=["case-studies"])
@@ -42,10 +40,6 @@ def _summary(row):  # type: ignore[no-untyped-def]
     }
 
 
-def _etag(payload: str) -> str:
-    return 'W/"' + hashlib.sha256(payload.encode()).hexdigest()[:16] + '"'
-
-
 @router.get("/case-studies")
 async def list_studies(
     request: Request,
@@ -70,14 +64,7 @@ async def list_studies(
     total = len(rows)
     page = rows[offset : offset + limit]
     body = {"success": True, "case_studies": [_summary(r) for r in page], "total": total}
-    tag = _etag(json.dumps(body, sort_keys=True, default=str))
-    response.headers["Cache-Control"] = "public, max-age=60, stale-while-revalidate=300"
-    response.headers["ETag"] = tag
-    if request.headers.get("if-none-match") == tag:
-        from fastapi.responses import Response as _R
-
-        return _R(status_code=304)
-    return body
+    return etagged_json(request, response, body, default=str)
 
 
 @router.get("/case-studies/{slug}")
@@ -99,11 +86,4 @@ async def get_study(slug: str, request: Request, response: Response, db: AsyncSe
         }
     )
     body = {"success": True, "case_study": base}
-    tag = _etag(json.dumps(body, sort_keys=True, default=str))
-    response.headers["Cache-Control"] = "public, max-age=60, stale-while-revalidate=300"
-    response.headers["ETag"] = tag
-    if request.headers.get("if-none-match") == tag:
-        from fastapi.responses import Response as _R
-
-        return _R(status_code=304)
-    return body
+    return etagged_json(request, response, body, default=str)

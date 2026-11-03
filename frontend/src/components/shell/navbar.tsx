@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { motion } from "framer-motion";
@@ -24,6 +24,9 @@ export function Navbar(): React.JSX.Element {
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [isMac, setIsMac] = useState(false);
+  const dialogRef = useRef<HTMLDivElement | null>(null);
+  const menuButtonRef = useRef<HTMLButtonElement | null>(null);
+  const wasOpen = useRef(false);
 
   useEffect(() => {
     setIsMac(/mac/i.test(navigator.platform));
@@ -39,6 +42,42 @@ export function Navbar(): React.JSX.Element {
       document.body.style.overflow = "";
     };
   }, [mobileOpen]);
+
+  useEffect(() => {
+    if (mobileOpen) {
+      wasOpen.current = true;
+      dialogRef.current?.focus();
+    } else if (wasOpen.current) {
+      wasOpen.current = false;
+      menuButtonRef.current?.focus();
+    }
+  }, [mobileOpen]);
+
+  function onDialogKeyDown(e: React.KeyboardEvent<HTMLDivElement>): void {
+    if (e.key === "Escape") {
+      e.preventDefault();
+      setMobileOpen(false);
+      return;
+    }
+    if (e.key !== "Tab") return;
+    const dialog = dialogRef.current;
+    if (!dialog) return;
+    const focusables = dialog.querySelectorAll<HTMLElement>('a[href], button:not([disabled])');
+    if (focusables.length === 0) return;
+    const first = focusables[0];
+    const last = focusables[focusables.length - 1];
+    if (!first || !last) return;
+    const active = document.activeElement;
+    if (e.shiftKey) {
+      if (active === first || !dialog.contains(active)) {
+        e.preventDefault();
+        last.focus();
+      }
+    } else if (active === last || !dialog.contains(active)) {
+      e.preventDefault();
+      first.focus();
+    }
+  }
 
   return (
     <>
@@ -105,9 +144,11 @@ export function Navbar(): React.JSX.Element {
               <Command size={16} aria-hidden />
             </button>
             <button
+              ref={menuButtonRef}
               type="button"
               aria-label={mobileOpen ? "Close menu" : "Open menu"}
               aria-expanded={mobileOpen}
+              aria-controls="mobile-menu"
               onClick={() => setMobileOpen((v) => !v)}
               className="flex h-11 w-11 items-center justify-center rounded-full border border-white/10"
             >
@@ -118,7 +159,16 @@ export function Navbar(): React.JSX.Element {
       </header>
 
       {mobileOpen && (
-        <div className="fixed inset-0 z-50 flex flex-col bg-void/95 backdrop-blur-xl md:hidden" role="dialog" aria-modal="true" aria-label="Menu">
+        <div
+          ref={dialogRef}
+          id="mobile-menu"
+          tabIndex={-1}
+          onKeyDown={onDialogKeyDown}
+          className="fixed inset-0 z-50 flex flex-col bg-void/95 backdrop-blur-xl focus:outline-none md:hidden"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Menu"
+        >
           <div className="flex items-center justify-between px-5 py-5">
             <span className="text-sm font-semibold">{siteConfig.name}</span>
             <button

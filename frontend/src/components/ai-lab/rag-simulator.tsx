@@ -10,17 +10,9 @@ const prefill = "How does local air-gapped AI routing work with our hardware fir
 export function RagSimulator(): React.JSX.Element {
   const [query, setQuery] = useState(prefill);
   const [topK, setTopK] = useState(2);
-  const [elapsed, setElapsed] = useState<number[]>([]);
 
   const m = useMutation({
     mutationFn: runRag,
-    onSuccess: (data) => {
-      const total = data.pipeline.reduce((a, p) => a + p.duration_ms, 0) || 1;
-      const scaled = data.pipeline.map((p) =>
-        Math.min(700, Math.max(250, (p.duration_ms / total) * 3000 * (p.duration_ms / total + 0.2))),
-      );
-      setElapsed(scaled);
-    },
   });
 
   return (
@@ -74,10 +66,14 @@ export function RagSimulator(): React.JSX.Element {
         <h3 className="font-mono text-xs uppercase text-text-faint">Pipeline</h3>
         {m.data ? (
           <ul className="mt-3 space-y-2 text-sm">
-            {m.data.pipeline.map((p, i) => (
+            {m.data.pipeline.map((p) => (
               <li key={p.stage} className="flex justify-between border-b border-white/5 pb-2">
                 <span className="text-emerald">● {p.stage}</span>
-                <span className="font-mono text-xs text-text-muted">{Math.round(elapsed[i] ?? p.duration_ms)} ms</span>
+                {typeof p.duration_ms === "number" && Number.isFinite(p.duration_ms) ? (
+                  <span className="font-mono text-xs text-text-muted">{Math.round(p.duration_ms)} ms</span>
+                ) : (
+                  <span className="font-mono text-xs text-text-faint">{p.detail}</span>
+                )}
               </li>
             ))}
           </ul>

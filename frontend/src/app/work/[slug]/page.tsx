@@ -1,9 +1,11 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { getCaseStudy } from "@/lib/api/endpoints";
+import { ApiError } from "@/lib/api/client";
 import { Markdown } from "@/components/ui/markdown";
 import { Badge } from "@/components/ui/badge";
 import { baseMetadata } from "@/lib/seo";
+import type { CaseStudy } from "@/lib/api/types";
 
 export const revalidate = 60;
 
@@ -19,11 +21,13 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
 
 export default async function CaseDetail({ params }: { params: Promise<{ slug: string }> }): Promise<React.JSX.Element> {
   const { slug } = await params;
-  let c = null;
+  let c: CaseStudy;
   try {
     c = await getCaseStudy(slug);
-  } catch {
-    notFound();
+  } catch (e) {
+    // Only a genuine 404 is "not found"; 500s/timeouts must hit the error boundary.
+    if (e instanceof ApiError && e.status === 404) notFound();
+    throw e;
   }
 
   return (

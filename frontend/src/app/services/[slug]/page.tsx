@@ -4,6 +4,7 @@ import { getService, getCaseStudies } from "@/lib/api/endpoints";
 import { Markdown } from "@/components/ui/markdown";
 import { CaseCard } from "@/components/work/case-card";
 import { baseMetadata } from "@/lib/seo";
+import { slugify } from "@/lib/format";
 
 export const revalidate = 60;
 
@@ -90,7 +91,7 @@ export default async function ServiceDetail({
         <aside className="hidden lg:block">
           <div className="sticky top-28 space-y-2">
             {headings.map((h) => (
-              <a key={h} href={`#${h.toLowerCase().replace(/\s+/g, "-")}`} className="block border-l-2 border-transparent pl-3 text-sm text-text-muted hover:border-accent hover:text-text">
+              <a key={h} href={`#${slugify(h)}`} className="block border-l-2 border-transparent pl-3 text-sm text-text-muted hover:border-accent hover:text-text">
                 {h}
               </a>
             ))}

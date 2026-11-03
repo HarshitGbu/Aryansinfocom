@@ -26,7 +26,7 @@ async def rag_simulation(payload: RagRequest):  # type: ignore[no-untyped-def]
     import json as _j
     import re as _re
 
-    from sqlalchemy import select, text
+    from sqlalchemy import text
 
     from app.config import get_settings
     from app.core.db import get_session_factory
@@ -68,12 +68,12 @@ async def rag_simulation(payload: RagRequest):  # type: ignore[no-untyped-def]
     over_budget = False
     if redis is not None and live_ok:
         try:
-            f"rag:budget:{hashlib.sha256(b'ip-global').hexdigest()}"
+            budget_key = f"rag:budget:{hashlib.sha256(b'ip-global').hexdigest()}"
             # simplified: count all live runs
-            cnt = await redis.incr("rag:live:count:daily")
+            cnt = await redis.incr(budget_key)
             if cnt == 1:
-                await redis.expire("rag:live:count:daily", 86400)
-            if cnt > settings.RAG_DAILY_BUDGET * 100:  # coarse
+                await redis.expire(budget_key, 86400)
+            if cnt > settings.RAG_DAILY_BUDGET:  # per-day cap on live runs
                 over_budget = True
         except Exception:
             pass
@@ -129,15 +129,31 @@ async def rag_simulation(payload: RagRequest):  # type: ignore[no-untyped-def]
                         for r in rows
                     ]
                     if not chunks:
-                        # ILIKE fallback
+                        # ILIKE fallback: real lexical match — only rows sharing at
+                        # least one query term; score = share of query terms matched.
                         res2 = await s.execute(
-                            select(text("document_title, content_chunk"))
-                            if False
-                            else text("SELECT document_title, content_chunk FROM ai_lab_knowledge_base LIMIT :k"),
-                            {"k": top_k},
+                            text(
+                                "SELECT document_title, content_chunk, "
+                                "COALESCE(("
+                                "  SELECT COUNT(*) FROM unnest(regexp_split_to_array(lower(:q), '\\s+')) AS w"
+                                "  WHERE w <> '' AND (lower(content_chunk) LIKE '%' || w || '%' "
+                                "    OR lower(document_title) LIKE '%' || w || '%')"
+                                "), 0)::float / GREATEST(1, array_length(regexp_split_to_array(lower(:q), '\\s+'), 1)) AS r "
+                                "FROM ai_lab_knowledge_base "
+                                "WHERE EXISTS ("
+                                "  SELECT 1 FROM unnest(regexp_split_to_array(lower(:q), '\\s+')) AS w"
+                                "  WHERE w <> '' AND (lower(content_chunk) LIKE '%' || w || '%' "
+                                "    OR lower(document_title) LIKE '%' || w || '%')"
+                                ") "
+                                "ORDER BY r DESC LIMIT :k"
+                            ),
+                            {"q": query, "k": top_k},
                         )
                         rows2 = res2.fetchall()
-                        chunks = [{"source": r[0], "score": 0.5, "chunk": r[1]} for r in rows2]
+                        chunks = [
+                            {"source": r[0], "score": round(max(0.0, min(1.0, float(r[2] or 0))), 4), "chunk": r[1]}
+                            for r in rows2
+                        ]
                 except Exception:
                     return JSONResponse(
                         status_code=503,

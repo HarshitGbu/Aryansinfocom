@@ -9,25 +9,22 @@ export default function ContactPage(): React.JSX.Element {
   return (
     <main className="mx-auto max-w-6xl px-5 pb-24 pt-28 md:px-8">
       <h1 className="text-4xl font-semibold">Contact</h1>
+      <div className="flat-card mt-6 rounded-[20px] p-6">
+        <h2 className="font-medium">Get in touch</h2>
+        <ul className="mt-3 space-y-2 text-sm text-text-muted">
+          <li>
+            <a href={`mailto:${siteConfig.email}`} className="hover:text-text">{siteConfig.email}</a>
+          </li>
+          <li>
+            <a href={`tel:${siteConfig.phone.replace(/\s/g, "")}`} className="hover:text-text">{siteConfig.phone}</a>
+          </li>
+        </ul>
+      </div>
       <div className="mt-8 grid gap-6 md:grid-cols-2">
         <BookingSection />
         <div id="contact-form">
           <ContactForm />
         </div>
-      </div>
-      <div className="flat-card mt-6 rounded-[20px] p-6">
-        <h2 className="font-medium">Location</h2>
-        <p className="mt-2 text-sm text-text-muted">{siteConfig.address}</p>
-        <p className="text-sm text-text-muted">{siteConfig.hours}</p>
-        <div aria-hidden className="grid-backdrop mt-4 h-32 rounded-[12px] border border-white/10" />
-        <a
-          href={`https://www.google.com/maps/search/${encodeURIComponent(siteConfig.address)}`}
-          target="_blank"
-          rel="noreferrer"
-          className="mt-3 inline-block text-sm text-cyan hover:underline"
-        >
-          Open in Maps
-        </a>
       </div>
     </main>
   );

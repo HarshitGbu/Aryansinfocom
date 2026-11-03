@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { parsePrompt } from "@/lib/api/endpoints";
+import { ApiError } from "@/lib/api/client";
 import { ShieldCheck, Cloud, Ban } from "lucide-react";
 
 const presets = [
@@ -40,6 +41,13 @@ export function PromptParser(): React.JSX.Element {
         >
           Analyze prompt
         </button>
+        {m.isError && (
+          <p role="alert" className="mt-3 text-sm text-rose">
+            {(m.error as ApiError).code === "rate_limited"
+              ? `You've run a lot of demos. Try again in ${(m.error as ApiError).retryAfterSeconds ?? 60} seconds.`
+              : "The demo is unavailable right now. Try again shortly."}
+          </p>
+        )}
       </div>
       {m.data && (
         <div className="grid gap-4 md:grid-cols-2">

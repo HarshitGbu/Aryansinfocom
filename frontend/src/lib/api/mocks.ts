@@ -4,7 +4,6 @@ import type {
   CaseStudy,
   CaseStudyFilter,
   CaseStudySummary,
-  ContactRequest,
   EstimateRequest,
   EstimateResult,
   HardwareBlueprint,
@@ -19,6 +18,7 @@ import type {
   ServiceCategory,
   ServiceSummary,
 } from "@/lib/api/types";
+import { ApiError } from "@/lib/api/client";
 
 const now = "2026-10-01T00:00:00Z";
 
@@ -130,7 +130,7 @@ export function mockServices(category?: ServiceCategory): ServiceSummary[] {
 
 export function mockService(slug: string): Service {
   const found = services.find((s) => s.slug === slug);
-  if (!found) throw Object.assign(new Error("Not found"), { status: 404 });
+  if (!found) throw new ApiError({ status: 404, code: "not_found", message: "Not found" });
   return found;
 }
 
@@ -149,7 +149,7 @@ export function mockCaseStudies(
 
 export function mockCaseStudy(slug: string): CaseStudy {
   const found = cases.find((c) => c.slug === slug);
-  if (!found) throw Object.assign(new Error("Not found"), { status: 404 });
+  if (!found) throw new ApiError({ status: 404, code: "not_found", message: "Not found" });
   return found;
 }
 
@@ -265,8 +265,8 @@ export function mockParse(_body: PromptParseRequest): PromptParseResponse {
   };
 }
 
-export function mockSearch(q: string): { results: SearchResult[] } {
-  void q as unknown as ContactRequest | void;
+export function mockSearch(_q: string): { results: SearchResult[] } {
+  void _q;
   return {
     results: [
       { type: "page", title: "Estimator", subtitle: null, href: "/estimator" },

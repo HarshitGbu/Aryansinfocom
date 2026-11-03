@@ -132,10 +132,7 @@ def parse_prompt(prompt: str) -> dict:
 
     # intent
     words = set(re.findall(r"[a-z0-9\-]+", text.lower()))
-    scores: dict[str, int] = {
-        k: len(v & words) + sum(1 for w in words for kw in v if kw in w and kw not in words) * 0
-        for k, v in INTENT_KEYWORDS.items()
-    }
+    scores: dict[str, int] = {k: len(v & words) for k, v in INTENT_KEYWORDS.items()}
     # also substring hits
     for label, kws in INTENT_KEYWORDS.items():
         extra = sum(1 for kw in kws if kw in text.lower() and kw not in words)
@@ -147,10 +144,8 @@ def parse_prompt(prompt: str) -> dict:
     else:
         label = best
         conf = 0.35 + 0.6 * (scores[best] / max(1, total))
-        # boost if multiple hits
+        # boost if multiple hits; formula max is 0.95
         conf = min(0.98, max(0.35, round(conf, 2)))
-        if conf >= 1.0:
-            conf = 0.98
     intent = {"label": label, "confidence": conf}
 
     # guardrails

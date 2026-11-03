@@ -1,5 +1,4 @@
 import { aboutProcess, securityCommitments } from "@/content/process";
-import { team } from "@/content/team";
 import { FooterCta } from "@/components/home/footer-cta";
 import { baseMetadata } from "@/lib/seo";
 
@@ -40,21 +39,7 @@ export default function AboutPage(): React.JSX.Element {
             ))}
           </ul>
         </section>
-        <section aria-labelledby="team" className="mt-16">
-          <h2 id="team" className="text-2xl font-semibold">Team</h2>
-          <div className="mt-6 grid grid-cols-2 gap-4 md:grid-cols-4">
-            {team.map((m) => (
-              <div key={m.name} className="flat-card rounded-[20px] p-5 text-center">
-                <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-white/10 font-mono text-sm">
-                  {m.initials}
-                </div>
-                <p className="mt-3 font-medium">{m.name}</p>
-                <p className="text-xs text-text-muted">{m.role}</p>
-              </div>
-            ))}
-          </div>
-        </section>
-      </div>
+        </div>
       <FooterCta />
     </main>
   );

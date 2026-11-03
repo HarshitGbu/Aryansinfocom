@@ -10,7 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import get_settings
 from app.core.db import get_db
-from app.core.security import client_ip, hash_ip
+from app.core.security import client_ip, error_response, hash_ip
 from app.schemas.common import EstimateRequest
 from app.schemas.requests import ContactRequest, LeadSubmitRequest
 
@@ -30,13 +30,7 @@ async def calculate(payload: EstimateRequest, request: Request):  # type: ignore
     data = payload.model_dump()
     errs = validate_estimate_input(data)
     if errs:
-        return JSONResponse(
-            status_code=422,
-            content={
-                "success": False,
-                "error": {"code": "validation_error", "message": "Validation failed", "details": {"fields": errs}},
-            },
-        )
+        return error_response(422, "validation_error", "Validation failed", {"fields": errs})
     result = calculate(_pricing(), data)
     resp = JSONResponse(content={"success": True, "estimate": result})
     resp.headers["Cache-Control"] = "no-store"
@@ -62,29 +56,13 @@ async def submit(payload: LeadSubmitRequest, request: Request, db: AsyncSession 
             "booking_url": get_settings().PUBLIC_BOOKING_URL or None,
         }
     if payload.consent is not True:
-        return JSONResponse(
-            status_code=422,
-            content={
-                "success": False,
-                "error": {
-                    "code": "validation_error",
-                    "message": "Consent required",
-                    "details": {"fields": {"consent": ["must be true"]}},
-                },
-            },
-        )
+        return error_response(422, "validation_error", "Consent required", {"fields": {"consent": ["must be true"]}})
     from app.services.pricing.engine import calculate, validate_estimate_input
 
     data = payload.estimate_input.model_dump()
     errs = validate_estimate_input(data)
     if errs:
-        return JSONResponse(
-            status_code=422,
-            content={
-                "success": False,
-                "error": {"code": "validation_error", "message": "Validation failed", "details": {"fields": errs}},
-            },
-        )
+        return error_response(422, "validation_error", "Validation failed", {"fields": errs})
     result = calculate(_pricing(), data)
     # dedupe
     from app.models.base import canonical_json
@@ -185,15 +163,9 @@ async def contact(payload: ContactRequest, request: Request, db: AsyncSession = 
         log.info("honeypot_hit", path="/contact")
         return {"success": True, "submission_id": "00000000-0000-0000-0000-000000000000"}
     if payload.consent is not True:
-        return JSONResponse(
-            status_code=422,
-            content={"success": False, "error": {"code": "validation_error", "message": "Consent required"}},
-        )
+        return error_response(422, "validation_error", "Consent required")
     if payload.topic and payload.topic not in ("software", "erp", "ai", "infrastructure", "other"):
-        return JSONResponse(
-            status_code=422,
-            content={"success": False, "error": {"code": "validation_error", "message": "Invalid topic"}},
-        )
+        return error_response(422, "validation_error", "Invalid topic")
     from datetime import datetime
 
     from app.models.tables import ContactSubmission

@@ -1,0 +1,19 @@
+[Unit]
+Description=Aryans Infocom frontend (Next.js)
+After=network.target aryan-backend.service
+
+[Service]
+Type=simple
+User=www-data
+WorkingDirectory=/opt/aryan-infocom/frontend
+EnvironmentFile=/opt/aryan-infocom/.env
+Environment=NODE_ENV=production
+Environment=PORT=3000
+Environment=API_BASE_URL=http://localhost:8000
+Environment=NEXT_PUBLIC_SITE_URL=http://localhost
+ExecStart=/usr/bin/node /opt/aryan-infocom/frontend/node_modules/.bin/next start -p 3000
+Restart=always
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target

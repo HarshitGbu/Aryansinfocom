@@ -1,11 +1,10 @@
 from __future__ import annotations
 
-import hashlib
-
 from fastapi import APIRouter, Depends, HTTPException, Request, Response
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.api.v1.common import etagged_json
 from app.core.db import get_db
 
 router = APIRouter(tags=["services"])
@@ -23,10 +22,6 @@ def _summary(row):  # type: ignore[no-untyped-def]
     }
 
 
-def _etag(payload: str) -> str:
-    return 'W/"' + hashlib.sha256(payload.encode()).hexdigest()[:16] + '"'
-
-
 @router.get("/services")
 async def list_services(
     request: Request, response: Response, category: str | None = None, db: AsyncSession = Depends(get_db)
@@ -40,16 +35,7 @@ async def list_services(
         q = q.where(Service.category == category)
     rows = (await db.execute(q)).scalars().all()
     body = {"success": True, "services": [_summary(r) for r in rows]}
-    import json as _j
-
-    tag = _etag(_j.dumps(body, sort_keys=True))
-    response.headers["Cache-Control"] = "public, max-age=60, stale-while-revalidate=300"
-    response.headers["ETag"] = tag
-    if request.headers.get("if-none-match") == tag:
-        from fastapi.responses import Response as _R
-
-        return _R(status_code=304)
-    return body
+    return etagged_json(request, response, body)
 
 
 @router.get("/services/{slug}")
@@ -68,13 +54,4 @@ async def get_service(slug: str, request: Request, response: Response, db: Async
         }
     )
     body = {"success": True, "service": item}
-    import json as _j
-
-    tag = _etag(_j.dumps(body, sort_keys=True))
-    response.headers["Cache-Control"] = "public, max-age=60, stale-while-revalidate=300"
-    response.headers["ETag"] = tag
-    if request.headers.get("if-none-match") == tag:
-        from fastapi.responses import Response as _R
-
-        return _R(status_code=304)
-    return body
+    return etagged_json(request, response, body)

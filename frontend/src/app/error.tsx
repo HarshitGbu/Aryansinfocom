@@ -7,7 +7,7 @@ export default function Error({
   reset: () => void;
 }): React.JSX.Element {
   return (
-    <main id="main" className="mx-auto flex min-h-[60vh] max-w-6xl flex-col items-center justify-center px-5 text-center">
+    <main className="mx-auto flex min-h-[60vh] max-w-6xl flex-col items-center justify-center px-5 text-center">
       <h1 className="text-2xl font-semibold">Something went wrong loading this page. Try again.</h1>
       <button
         type="button"

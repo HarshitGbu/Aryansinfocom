@@ -1,11 +1,9 @@
-// PLACEHOLDER — replace with real company details before launch.
+// PLACEHOLDER — replace contact details before launch. Company name set to "Aryans Infocom".
 export const siteConfig = {
-  // PLACEHOLDER: company name not provided
-  name: "Company Name",
+  name: "Aryans Infocom",
   // PLACEHOLDER
   email: "hello@example.com",
-  // PLACEHOLDER
-  phone: "+1 (555) 000-0000",
+  phone: "+91 9910777822",
   // PLACEHOLDER
   address: "123 Market Street, Suite 100, San Francisco, CA 94103",
   // PLACEHOLDER

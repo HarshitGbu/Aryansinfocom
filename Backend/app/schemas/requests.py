@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import Literal
+
 from pydantic import BaseModel, ConfigDict, EmailStr, Field
 
 from app.schemas.common import EstimateRequest
@@ -39,6 +41,9 @@ class PromptParseRequest(BaseModel):
     prompt: str = Field(min_length=3, max_length=500)
 
 
+LeadStatus = Literal["new", "contacted", "discovery_booked", "closed"]
+
+
 class AdminPatchRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
-    status: str
+    status: LeadStatus

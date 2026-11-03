@@ -39,7 +39,7 @@ export function Hero(): React.JSX.Element {
   }
 
   const enter = (delay: number, y = 20): object =>
-    reduce
+    reduce === true
       ? {}
       : {
           initial: { opacity: 0, y },

@@ -16,6 +16,10 @@ export function formatWeeks(range: Range): string {
   return `${range.min}–${range.max} weeks`;
 }
 
+export function slugify(heading: string): string {
+  return heading.toLowerCase().replace(/\s+/g, "-");
+}
+
 export function formatRetryAfter(seconds: number): string {
   if (seconds < 60) return `${seconds} seconds`;
   const minutes = Math.ceil(seconds / 60);
