@@ -2,8 +2,8 @@
 export const siteConfig = {
   name: "Aryans Infocom",
   // PLACEHOLDER
-  email: "hello@example.com",
-  phone: "+91 9910777822",
+  email: "info@aryansinfocom.com",
+  phone: "8700086730",
   // PLACEHOLDER
   address: "123 Market Street, Suite 100, San Francisco, CA 94103",
   // PLACEHOLDER
