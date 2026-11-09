@@ -1,5 +1,6 @@
-import { request, isMockingEnabled } from "@/lib/api/client";
+import { ApiError, request, isMockingEnabled } from "@/lib/api/client";
 import * as mocks from "@/lib/api/mocks";
+import { findStaticCaseStudy, staticCaseStudyList } from "@/lib/api/static-case-studies";
 import type {
   CaseStudyFilter,
   ContactRequest,
@@ -39,6 +40,16 @@ export async function getService(slug: string): Promise<Service> {
   return data.service;
 }
 
+/**
+ * True only when the API could not be reached at all: `request()` maps every
+ * fetch-level failure (DNS/connection refused/abort) and the 10s timeout to an
+ * `ApiError` with `status: 0`. A live API always answers with a real HTTP
+ * status, so 4xx/5xx from a reachable backend never falls back to static data.
+ */
+function isUnreachable(e: unknown): boolean {
+  return e instanceof ApiError && e.status === 0;
+}
+
 export async function getCaseStudies(params?: {
   filter?: CaseStudyFilter;
   limit?: number;
@@ -50,18 +61,36 @@ export async function getCaseStudies(params?: {
   if (params?.limit !== undefined) search.set("limit", String(params.limit));
   if (params?.offset !== undefined) search.set("offset", String(params.offset));
   const q = search.toString() ? `?${search.toString()}` : "";
-  return request<{ success: true; case_studies: CaseStudySummary[]; total: number }>(
-    `/case-studies${q}`,
-    { method: "GET", revalidate: 60 },
-  );
+  try {
+    return await request<{ success: true; case_studies: CaseStudySummary[]; total: number }>(
+      `/case-studies${q}`,
+      { method: "GET", revalidate: 60 },
+    );
+  } catch (e) {
+    if (!isUnreachable(e)) throw e;
+    return staticCaseStudyList(params);
+  }
 }
 
 export async function getCaseStudy(slug: string): Promise<CaseStudy> {
   if (isMockingEnabled()) return mocks.mockCaseStudy(slug);
-  const data = await request<{ success: true; case_study: CaseStudy }>(
-    `/case-studies/${slug}`,
-    { method: "GET", revalidate: 60 },
-  );
+  let data: { success: true; case_study: CaseStudy };
+  try {
+    data = await request<{ success: true; case_study: CaseStudy }>(
+      `/case-studies/${slug}`,
+      { method: "GET", revalidate: 60 },
+    );
+  } catch (e) {
+    if (!isUnreachable(e)) throw e;
+    const fallback = findStaticCaseStudy(slug);
+    if (fallback) return fallback;
+    // Unknown slug: mirror the live API's 404 so page.tsx renders notFound().
+    throw new ApiError({
+      status: 404,
+      code: "not_found",
+      message: `Case study not found: ${slug}`,
+    });
+  }
   return data.case_study;
 }
 
