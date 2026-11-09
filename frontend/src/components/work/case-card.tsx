@@ -1,16 +1,29 @@
+import Image from "next/image";
 import Link from "next/link";
 import type { CaseStudySummary } from "@/lib/api/types";
 import { SpotlightCard } from "@/components/ui/spotlight-card";
 import { Badge } from "@/components/ui/badge";
+import { workCover } from "@/lib/work-covers";
 
 export function CaseCard({ item }: { item: CaseStudySummary }): React.JSX.Element {
+  const cover = item.cover_image_url ?? workCover(item.slug);
   return (
     <SpotlightCard className="flat-card overflow-hidden rounded-[20px]">
       <Link href={`/work/${item.slug}`} className="group block" aria-label={item.title}>
-        <div className="grid-backdrop flex aspect-[16/9] items-center justify-center border-b border-white/10 bg-surface-2">
-          <span className="font-mono text-xs uppercase tracking-wider text-text-faint">
-            {item.service_category}
-          </span>
+        <div className="grid-backdrop relative flex aspect-[16/9] items-center justify-center overflow-hidden border-b border-white/10 bg-surface-2">
+          {cover ? (
+            <Image
+              src={cover}
+              alt=""
+              fill
+              sizes="(min-width: 768px) 33vw, 100vw"
+              className="object-cover transition-transform duration-500 group-hover:scale-[1.04] group-focus-visible:scale-[1.04]"
+            />
+          ) : (
+            <span className="font-mono text-xs uppercase tracking-wider text-text-faint">
+              {item.service_category}
+            </span>
+          )}
         </div>
         <div className="p-5">
           <div className="flex items-center justify-between gap-2">
