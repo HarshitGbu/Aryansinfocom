@@ -1,11 +1,13 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 import { getCaseStudy } from "@/lib/api/endpoints";
 import { ApiError } from "@/lib/api/client";
 import { Markdown } from "@/components/ui/markdown";
 import { Badge } from "@/components/ui/badge";
 import { baseMetadata } from "@/lib/seo";
 import type { CaseStudy } from "@/lib/api/types";
+import { workCover } from "@/lib/work-covers";
 
 export const revalidate = 60;
 
@@ -30,6 +32,8 @@ export default async function CaseDetail({ params }: { params: Promise<{ slug: s
     throw e;
   }
 
+  const cover = c.cover_image_url ?? workCover(c.slug ?? slug);
+
   return (
     <main className="pt-28">
       <div className="mx-auto max-w-6xl px-5 md:px-8">
@@ -38,6 +42,17 @@ export default async function CaseDetail({ params }: { params: Promise<{ slug: s
           <span>{c.client_industry}</span>
           <Badge className="capitalize">{c.service_category}</Badge>
         </div>
+        {cover ? (
+          <div className="grid-backdrop relative mt-8 aspect-[16/9] w-full overflow-hidden rounded-[20px] border border-white/10 bg-surface-2">
+            <Image
+              src={cover}
+              alt={c.title}
+              fill
+              sizes="(min-width: 1280px) 1152px, 100vw"
+              className="object-cover"
+            />
+          </div>
+        ) : null}
         <div className="mt-8 grid grid-cols-2 gap-px overflow-hidden rounded-[20px] border border-white/10 bg-white/10 md:grid-cols-4">
           {c.metrics.map((m) => (
             <div key={m.key} className="bg-surface p-5">
