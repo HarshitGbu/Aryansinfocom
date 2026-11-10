@@ -3,7 +3,7 @@ import { getServices, getCaseStudies } from "@/lib/api/endpoints";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const base = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
-  const staticPaths = ["", "/services", "/work", "/ai-lab", "/estimator", "/about", "/contact"];
+  const staticPaths = ["", "/services", "/work", "/estimator", "/about", "/contact"];
   const entries: MetadataRoute.Sitemap = staticPaths.map((p) => ({
     url: `${base}${p}`,
     lastModified: new Date(),

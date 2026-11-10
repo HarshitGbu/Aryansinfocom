@@ -31,7 +31,6 @@ const NAV: Item[] = [
   { id: "ai", label: "AI tools and integration", hint: "Service", href: "/services/ai-solutions", icon: <FlaskConical size={16} className={iconClass} /> },
   { id: "infra", label: "Turnkey office and hardware", hint: "Service", href: "/services/infrastructure", icon: <Server size={16} className={iconClass} /> },
   { id: "work", label: "Case studies", hint: "Page", href: "/work", icon: <Layers size={16} className={iconClass} /> },
-  { id: "lab", label: "AI Lab", hint: "Page", href: "/ai-lab", icon: <FlaskConical size={16} className={iconClass} /> },
   { id: "about", label: "About", hint: "Page", href: "/about", icon: <Info size={16} className={iconClass} /> },
   { id: "contact", label: "Contact", hint: "Page", href: "/contact", icon: <Mail size={16} className={iconClass} /> },
 ];

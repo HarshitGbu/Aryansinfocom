@@ -5,7 +5,7 @@ import { siteConfig } from "@/content/site";
 export const metadata = baseMetadata({
   title: "Terms and Conditions",
   description:
-    "The terms that govern use of the Aryans Infocom website and its services, including the estimator, AI Lab, and client engagements.",
+    "The terms that govern use of the Aryans Infocom website and its services, including the estimator and client engagements.",
   path: "/terms",
 });
 
@@ -41,8 +41,7 @@ const sections: Section[] = [
       b(
         <p>
           These Terms apply to every visitor and user of the website, including anyone who
-          submits the contact form, books a discovery call, uses the estimator, or runs the AI
-          Lab or RAG simulator demos.
+          submits the contact form, books a discovery call, or uses the estimator.
         </p>
       ),
     ],
@@ -352,8 +351,8 @@ const sections: Section[] = [
       b(
         <p>
           Where a service-level agreement (SLA) applies, its terms, measurement method, and
-          remedies govern. General website features, such as the estimator and the AI Lab
-          demo, are provided on a best-effort basis without an SLA.
+          remedies govern. General website features, such as the estimator, are provided on a
+          best-effort basis without an SLA.
         </p>
       ),
     ],
@@ -373,8 +372,8 @@ const sections: Section[] = [
             Scrape, harvest, or reverse-engineer the Website, its content, or its tools
           </li>
           <li>
-            Abuse the AI Lab, RAG simulator, or estimator, including through automated or
-            excessive use that degrades service for others
+            Abuse the estimator or any other Website feature, including through
+            automated or excessive use that degrades service for others
           </li>
           <li>
             Use it to transmit malware or to infringe the rights of others

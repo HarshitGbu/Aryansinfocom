@@ -35,8 +35,7 @@ const sections: Section[] = [
         <p>
           This policy describes how {siteConfig.name} (&ldquo;we&rdquo;, &ldquo;us&rdquo;)
           collects, uses, and protects personal data when you use this website and its related
-          services: the contact form, discovery call booking, the cost estimator, and the AI
-          Lab and RAG simulator demos.
+          services: the contact form, discovery call booking, and the cost estimator.
         </p>
       ),
       b(<p>This Privacy Policy is effective as of 9 November 2026.</p>),
@@ -100,26 +99,6 @@ const sections: Section[] = [
         <p>
           You can disable cookies in your browser settings. Disabling essential cookies may
           affect some features of the site.
-        </p>
-      ),
-    ],
-  },
-  {
-    id: "ai-lab-data",
-    heading: "AI Lab and RAG simulator data",
-    body: [
-      b(
-        <p>
-          Prompts, queries, and files you submit to the AI Lab or RAG simulator demos run in
-          your browser session and are not retained by us after you leave the page. Demo
-          inputs are not stored, logged for our own purposes, or used to train models.
-        </p>
-      ),
-      b(
-        <p>
-          Please do not enter confidential, proprietary, or personal data into the demos. The
-          underlying AI models are provided by third-party API providers and are subject to
-          their own privacy policies.
         </p>
       ),
     ],

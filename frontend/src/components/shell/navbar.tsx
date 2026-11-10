@@ -13,7 +13,6 @@ import { Kbd } from "@/components/ui/kbd";
 const links = [
   { href: "/services", label: "Services" },
   { href: "/work", label: "Work" },
-  { href: "/ai-lab", label: "AI Lab" },
   { href: "/estimator", label: "Estimator" },
   { href: "/about", label: "About" },
 ];

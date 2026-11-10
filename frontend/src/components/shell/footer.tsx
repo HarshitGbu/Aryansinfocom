@@ -23,10 +23,8 @@ export function Footer(): React.JSX.Element {
           </ul>
         </div>
         <div>
-          <h2 className="mb-4 text-sm font-semibold">Lab and tools</h2>
+          <h2 className="mb-4 text-sm font-semibold">Tools</h2>
           <ul className="space-y-2 text-sm text-text-muted">
-            <li><Link href="/ai-lab" className="hover:text-text">AI Lab</Link></li>
-            <li><Link href="/ai-lab#rag" className="hover:text-text">RAG simulator</Link></li>
             <li><Link href="/estimator" className="hover:text-text">Estimator</Link></li>
           </ul>
         </div>
