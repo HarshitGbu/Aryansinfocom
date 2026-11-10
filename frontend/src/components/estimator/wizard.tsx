@@ -7,7 +7,7 @@ import { useEstimatorStore, needsOffice, needsSoftware } from "@/lib/stores/esti
 import type { EstimatorService } from "@/lib/api/types";
 import { estimatorServiceMeta } from "@/content/pillars";
 import { LiveSummary } from "@/components/estimator/live-summary";
-import { submitEstimate } from "@/lib/api/endpoints";
+import { submitToWeb3Forms } from "@/lib/web3forms";
 import { useState } from "react";
 import Link from "next/link";
 import { cn } from "@/lib/cn";
@@ -60,35 +60,39 @@ function WizardInner(): React.JSX.Element {
     setSending(true);
     setError(null);
     try {
-      const res = await submitEstimate({
-        client_name: store.contact.client_name,
-        client_email: store.contact.client_email,
-        company_name: store.contact.company_name || undefined,
-        phone_number: store.contact.phone_number || undefined,
-        notes: store.contact.notes || undefined,
-        estimate_input: {
-          selected_services: services,
-          office_parameters: { ...store.office },
-          software_parameters: { ...store.software },
-        },
+      await submitToWeb3Forms(`New project estimate request from ${store.contact.client_name}`, {
+        name: store.contact.client_name,
+        email: store.contact.client_email,
+        company: store.contact.company_name || "",
+        phone: store.contact.phone_number || "",
+        notes: store.contact.notes || "",
+        services: services.join(", ") || "",
+        ...(showOffice
+          ? {
+              workstations: store.office.workstations,
+              floor_area_sqft: store.office.floor_area_sqft,
+              require_server_rack: store.office.require_server_rack,
+              air_gapped_security: store.office.air_gapped_security,
+            }
+          : {}),
+        ...(showSoftware
+          ? {
+              user_roles: store.software.user_roles_count,
+              integrations: store.software.third_party_integrations.join(", ") || "",
+            }
+          : {}),
         consent: true,
-        website: store.contact.website || undefined,
+        // Honeypot: hidden field, should stay empty for real humans.
+        website: store.contact.website || "",
       });
-      store.setResult(res.estimate);
-      store.setLead(res.lead_id, res.booking_url);
       store.setStep(6);
       try {
         sessionStorage.removeItem("estimator:v1");
       } catch {
         /* ignore */
       }
-    } catch (e) {
-      const err = e as { code?: string; retryAfterSeconds?: number; message?: string };
-      if (err.code === "rate_limited") {
-        setError(`Too many requests. Try again in ${Math.ceil((err.retryAfterSeconds ?? 600) / 60)} minutes.`);
-      } else {
-        setError("Couldn't send your estimate. Your details are saved. Try again.");
-      }
+    } catch {
+      setError("Couldn't send your estimate. Your details are saved. Try again.");
     } finally {
       setSending(false);
     }
