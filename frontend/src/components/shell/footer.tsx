@@ -44,6 +44,7 @@ export function Footer(): React.JSX.Element {
           <span>© {new Date().getFullYear()} {siteConfig.name}</span>
           <span className="flex flex-wrap items-center gap-x-4 gap-y-1">
             <Link href="/privacy" className="hover:text-text">Privacy Policy</Link>
+            <Link href="/terms" className="hover:text-text">Terms &amp; Conditions</Link>
             <span>Press ⌘K to search</span>
             <a href={`mailto:${siteConfig.email}`}>{siteConfig.email}</a>
           </span>
