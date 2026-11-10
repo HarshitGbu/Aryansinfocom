@@ -42,8 +42,11 @@ export function Footer(): React.JSX.Element {
       <div className="border-t border-white/10">
         <div className="mx-auto flex max-w-6xl flex-col gap-2 px-5 py-6 text-xs text-text-faint md:flex-row md:items-center md:justify-between md:px-8">
           <span>© {new Date().getFullYear()} {siteConfig.name}</span>
-          <span>Press ⌘K to search</span>
-          <a href={`mailto:${siteConfig.email}`}>{siteConfig.email}</a>
+          <span className="flex flex-wrap items-center gap-x-4 gap-y-1">
+            <Link href="/privacy" className="hover:text-text">Privacy Policy</Link>
+            <span>Press ⌘K to search</span>
+            <a href={`mailto:${siteConfig.email}`}>{siteConfig.email}</a>
+          </span>
         </div>
       </div>
     </footer>
