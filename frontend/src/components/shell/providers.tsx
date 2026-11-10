@@ -23,6 +23,14 @@ function LenisInit(): null {
     let raf = 0;
     void import("lenis").then((m) => {
       const L = new m.default({ lerp: 0.12 });
+      // Chrome/Edge restore the scroll position after a refresh, sometimes after
+      // Lenis has already booted. Re-sync so the animation target does not clamp
+      // wheel scrolling at a stale position.
+      const resync = (): void => {
+        L.scrollTo(window.scrollY, { immediate: true });
+      };
+      if (document.readyState === "complete") resync();
+      else window.addEventListener("load", resync, { once: true });
       lenis = L;
       const loop = (t: number): void => {
         L.raf(t);
