@@ -31,3 +31,7 @@ htmlcov/
 
 # os
 .DS_Store
+
+# local test artifacts
+.playwright-mcp/
+web3forms-success.png
