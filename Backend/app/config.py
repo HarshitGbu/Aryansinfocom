@@ -65,6 +65,10 @@ class Settings(BaseSettings):
             problems.append("IP_HASH_SALT missing/example value")
         if "*" in self.cors_origins:
             problems.append("CORS_ORIGINS must not contain * in production")
+        if "localhost" in self.DATABASE_URL or "app:app@" in self.DATABASE_URL:
+            problems.append("DATABASE_URL still uses the local development default")
+        if "localhost" in self.REDIS_URL:
+            problems.append("REDIS_URL still uses the local development default")
         if problems:
             raise RuntimeError("Refusing to start in production: " + "; ".join(problems))
 
