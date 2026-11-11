@@ -3,7 +3,12 @@ import { BookingSection } from "@/components/contact/booking-section";
 import { siteConfig } from "@/content/site";
 import { baseMetadata } from "@/lib/seo";
 
-export const metadata = baseMetadata({ title: "Contact", description: "Book a call or send a message.", path: "/contact" });
+export const metadata = baseMetadata({
+  title: "Contact",
+  description:
+    "Talk to Aryans Infocom about a custom web app, ERP system, AI or RAG tool, or office network. Book a call or send a message — we reply in one business day.",
+  path: "/contact",
+});
 
 export default function ContactPage(): React.JSX.Element {
   return (

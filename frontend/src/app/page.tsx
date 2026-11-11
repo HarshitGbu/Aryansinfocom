@@ -8,6 +8,7 @@ import { FeaturedWork } from "@/components/home/featured-work";
 import { EstimatorTeaser } from "@/components/home/estimator-teaser";
 import { FooterCta } from "@/components/home/footer-cta";
 import { baseMetadata, organizationJsonLd } from "@/lib/seo";
+import { toJsonLd, websiteJsonLd } from "@/lib/jsonld";
 
 export const metadata: Metadata = baseMetadata({
   description:
@@ -20,7 +21,11 @@ export default function HomePage(): React.JSX.Element {
     <main>
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationJsonLd()) }}
+        {...toJsonLd(organizationJsonLd())}
+      />
+      <script
+        type="application/ld+json"
+        {...toJsonLd(websiteJsonLd())}
       />
       <Hero />
       <MetricRibbon />

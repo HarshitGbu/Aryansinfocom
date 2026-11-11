@@ -16,7 +16,7 @@ def get_redis_client() -> Any:
         from app.config import get_settings
 
         settings = get_settings()
-        _redis = aioredis.from_url(settings.REDIS_URL, decode_responses=True)
+        _redis = aioredis.Redis.from_url(settings.REDIS_URL, decode_responses=True)
         return _redis
     except Exception:
         return None

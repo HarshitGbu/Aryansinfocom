@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import Any
+
 PAGES = [
     {"title": "Home", "href": "/", "keywords": ["home", "landing", "start"]},
     {"title": "Services", "href": "/services", "keywords": ["services", "offerings"]},
@@ -23,9 +25,9 @@ ACTIONS = [
 ]
 
 
-def rank_static(query: str, items: list[dict], rtype: str) -> list[dict]:
+def rank_static(query: str, items: list[dict[str, Any]], rtype: str) -> list[dict[str, Any]]:
     q = query.lower().strip()
-    out: list[tuple[int, dict]] = []
+    out: list[tuple[int, dict[str, Any]]] = []
     for it in items:
         t = it["title"].lower()
         score = -1

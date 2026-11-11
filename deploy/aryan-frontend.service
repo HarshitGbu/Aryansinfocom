@@ -4,16 +4,23 @@ After=network.target aryan-backend.service
 
 [Service]
 Type=simple
-User=www-data
+User=aryan-web
+Group=aryan-web
 WorkingDirectory=/opt/aryan-infocom/frontend
-EnvironmentFile=/opt/aryan-infocom/.env
+EnvironmentFile=/opt/aryan-infocom/frontend.env
 Environment=NODE_ENV=production
 Environment=PORT=3000
-Environment=API_BASE_URL=http://localhost:8000
-Environment=NEXT_PUBLIC_SITE_URL=http://localhost
-ExecStart=/usr/bin/node /opt/aryan-infocom/frontend/node_modules/.bin/next start -p 3000
+Environment=API_BASE_URL=http://127.0.0.1:8000
+Environment=NEXT_PUBLIC_SITE_URL=https://aryansinfocom.com
+ExecStart=/usr/bin/node /opt/aryan-infocom/frontend/node_modules/.bin/next start -H 127.0.0.1 -p 3000
 Restart=always
 RestartSec=3
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectSystem=strict
+ProtectHome=yes
+ReadWritePaths=/opt/aryan-infocom/frontend/.next/cache /opt/aryan-infocom/frontend/.next/server
+RestrictSUIDSGID=yes
 
 [Install]
 WantedBy=multi-user.target

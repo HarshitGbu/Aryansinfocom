@@ -1,16 +1,21 @@
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends, HTTPException
+from typing import Any
+
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.db import get_db
+from app.core.security import escape_like
 from app.services.search import ACTIONS, PAGES, rank_static
 
 router = APIRouter(tags=["search"])
 
 
 @router.get("/search")
-async def search(q: str = "", limit: int = 8, db: AsyncSession = Depends(get_db)):  # type: ignore[no-untyped-def]
+async def search(
+    q: str = Query(default="", max_length=200), limit: int = 8, db: AsyncSession = Depends(get_db)
+) -> Any:
     if len(q.strip()) < 2:
         raise HTTPException(status_code=422, detail="validation_error")
     if not (1 <= limit <= 20):
@@ -21,7 +26,8 @@ async def search(q: str = "", limit: int = 8, db: AsyncSession = Depends(get_db)
     from app.models.tables import CaseStudy, Service
 
     qn = q.strip()
-    results: list[dict] = []
+    escaped_q = escape_like(qn)
+    results: list[dict[str, Any]] = []
     # static first
     results += rank_static(qn, PAGES, "page")[:3]
     results += rank_static(qn, ACTIONS, "action")[:3]
@@ -31,7 +37,12 @@ async def search(q: str = "", limit: int = 8, db: AsyncSession = Depends(get_db)
             (
                 await db.execute(
                     select(Service)
-                    .where(or_(Service.title.ilike(f"%{qn}%"), Service.short_description.ilike(f"%{qn}%")))
+                    .where(
+                        or_(
+                            Service.title.ilike(f"%{escaped_q}%", escape="\\"),
+                            Service.short_description.ilike(f"%{escaped_q}%", escape="\\"),
+                        )
+                    )
                     .order_by(Service.sort_order.asc())
                     .limit(10)
                 )
@@ -50,13 +61,13 @@ async def search(q: str = "", limit: int = 8, db: AsyncSession = Depends(get_db)
             return 2
 
         srows = sorted(srows, key=lambda r: (_rk(r.title), r.sort_order))[:3]
-        for r in srows:
+        for sr in srows:
             results.append(
                 {
                     "type": "service",
-                    "title": r.title,
-                    "subtitle": r.short_description[:120],
-                    "href": f"/services/{r.slug}",
+                    "title": sr.title,
+                    "subtitle": sr.short_description[:120],
+                    "href": f"/services/{sr.slug}",
                 }
             )
     except Exception:
@@ -66,7 +77,12 @@ async def search(q: str = "", limit: int = 8, db: AsyncSession = Depends(get_db)
             (
                 await db.execute(
                     select(CaseStudy)
-                    .where(or_(CaseStudy.title.ilike(f"%{qn}%"), CaseStudy.problem_statement.ilike(f"%{qn}%")))
+                    .where(
+                        or_(
+                            CaseStudy.title.ilike(f"%{escaped_q}%", escape="\\"),
+                            CaseStudy.problem_statement.ilike(f"%{escaped_q}%", escape="\\"),
+                        )
+                    )
                     .order_by(CaseStudy.sort_order.asc())
                     .limit(10)
                 )
@@ -81,9 +97,9 @@ async def search(q: str = "", limit: int = 8, db: AsyncSession = Depends(get_db)
                 r.sort_order,
             ),
         )[:3]
-        for r in crows:
+        for cr in crows:
             results.append(
-                {"type": "case_study", "title": r.title, "subtitle": r.client_industry, "href": f"/work/{r.slug}"}
+                {"type": "case_study", "title": cr.title, "subtitle": cr.client_industry, "href": f"/work/{cr.slug}"}
             )
     except Exception:
         pass

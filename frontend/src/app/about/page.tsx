@@ -2,7 +2,12 @@ import { aboutProcess, securityCommitments } from "@/content/process";
 import { FooterCta } from "@/components/home/footer-cta";
 import { baseMetadata } from "@/lib/seo";
 
-export const metadata = baseMetadata({ title: "About", description: "How we work.", path: "/about" });
+export const metadata = baseMetadata({
+  title: "About",
+  description:
+    "Aryans Infocom builds custom web apps, enterprise ERP systems, AI tools, and office infrastructure as one team — from discovery and architecture to launch.",
+  path: "/about",
+});
 
 export default function AboutPage(): React.JSX.Element {
   return (

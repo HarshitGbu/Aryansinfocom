@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import TYPE_CHECKING, Any
+
 from fastapi import APIRouter, Depends, HTTPException, Request, Response
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -7,10 +9,13 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.api.v1.common import etagged_json
 from app.core.db import get_db
 
+if TYPE_CHECKING:
+    from app.models.tables import HardwareBlueprint
+
 router = APIRouter(tags=["blueprints"])
 
 
-def _out(row):  # type: ignore[no-untyped-def]
+def _out(row: HardwareBlueprint) -> dict[str, Any]:
     return {
         "blueprint_code": row.blueprint_code,
         "tier_name": row.tier_name,
@@ -22,7 +27,7 @@ def _out(row):  # type: ignore[no-untyped-def]
 
 
 @router.get("/hardware-blueprints")
-async def list_bp(request: Request, response: Response, db: AsyncSession = Depends(get_db)):  # type: ignore[no-untyped-def]
+async def list_bp(request: Request, response: Response, db: AsyncSession = Depends(get_db)) -> Any:
     from app.models.tables import HardwareBlueprint
 
     rows = (
@@ -33,7 +38,7 @@ async def list_bp(request: Request, response: Response, db: AsyncSession = Depen
 
 
 @router.get("/hardware-blueprints/{code}")
-async def get_bp(code: str, request: Request, response: Response, db: AsyncSession = Depends(get_db)):  # type: ignore[no-untyped-def]
+async def get_bp(code: str, request: Request, response: Response, db: AsyncSession = Depends(get_db)) -> Any:
     from app.models.tables import HardwareBlueprint
 
     row = (

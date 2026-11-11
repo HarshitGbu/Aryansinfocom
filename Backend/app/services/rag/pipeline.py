@@ -1,9 +1,16 @@
 from __future__ import annotations
 
+from typing import Any
+
 
 async def run_pipeline(
-    query: str, top_k: int, db_chunks: list[dict], mode: str, llm_answer: str, timings: dict[str, tuple[float, str]]
-) -> dict:
+    query: str,
+    top_k: int,
+    db_chunks: list[dict[str, Any]],
+    mode: str,
+    llm_answer: str,
+    timings: dict[str, tuple[float, str]],
+) -> dict[str, Any]:
     # timings: stage -> (duration_ms, detail)
     order = ["embed_query", "vector_search", "rerank", "prompt_assembly", "generation"]
     pipeline = [

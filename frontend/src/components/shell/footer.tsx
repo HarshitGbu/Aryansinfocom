@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import { siteConfig } from "@/content/site";
 
@@ -39,7 +40,16 @@ export function Footer(): React.JSX.Element {
       </div>
       <div className="border-t border-white/10">
         <div className="mx-auto flex max-w-6xl flex-col gap-2 px-5 py-6 text-xs text-text-faint md:flex-row md:items-center md:justify-between md:px-8">
-          <span>© {new Date().getFullYear()} {siteConfig.name}</span>
+          <span className="flex items-center gap-2">
+            <Image
+              src="/logo.png"
+              alt=""
+              width={20}
+              height={20}
+              className="h-5 w-5 rounded-[5px]"
+            />
+            © {new Date().getFullYear()} {siteConfig.name}
+          </span>
           <span className="flex flex-wrap items-center gap-x-4 gap-y-1">
             <Link href="/privacy" className="hover:text-text">Privacy Policy</Link>
             <Link href="/terms" className="hover:text-text">Terms &amp; Conditions</Link>

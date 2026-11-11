@@ -1,9 +1,13 @@
 from __future__ import annotations
 
+from typing import Any
+
 from arq.connections import RedisSettings
 
+from app.config import get_settings
 
-async def notify_new_lead_task(ctx: dict, lead_id: str) -> None:
+
+async def notify_new_lead_task(ctx: dict[str, Any], lead_id: str) -> None:
     from sqlalchemy import select
 
     from app.core.db import get_session_factory
@@ -19,8 +23,7 @@ async def notify_new_lead_task(ctx: dict, lead_id: str) -> None:
         )
         # fallback: lookup by string id
         if lead is None:
-
-            res = await s.execute(select(LeadEstimate).where(LeadEstimate.id == lead_id))  # type: ignore[arg-type]
+            res = await s.execute(select(LeadEstimate).where(LeadEstimate.id == lead_id))
             lead = res.scalar_one_or_none()
         if lead is None:
             return
@@ -34,29 +37,27 @@ async def notify_new_lead_task(ctx: dict, lead_id: str) -> None:
         )
 
 
-async def notify_new_contact_task(ctx: dict, submission_id: str) -> None:
-
+async def notify_new_contact_task(ctx: dict[str, Any], submission_id: str) -> None:
     from app.core.db import get_session_factory
     from app.models.tables import ContactSubmission
     from app.services.notifications import notify_new_contact
 
     factory = get_session_factory()
     async with factory() as s:
-        row = await s.get(ContactSubmission, submission_id)  # type: ignore[arg-type]
+        row = await s.get(ContactSubmission, submission_id)
         if row is None:
             return
         await notify_new_contact(str(row.id), row.name, row.email, row.message)
 
 
-async def send_lead_confirmation_task(ctx: dict, lead_id: str) -> None:
-
+async def send_lead_confirmation_task(ctx: dict[str, Any], lead_id: str) -> None:
     from app.core.db import get_session_factory
     from app.models.tables import LeadEstimate
     from app.services.notifications import send_lead_confirmation
 
     factory = get_session_factory()
     async with factory() as s:
-        lead = await s.get(LeadEstimate, lead_id)  # type: ignore[arg-type]
+        lead = await s.get(LeadEstimate, lead_id)
         if lead is None:
             return
         await send_lead_confirmation(
@@ -82,6 +83,6 @@ def _is_uuid(v: str) -> bool:
 
 class WorkerSettings:
     functions = [notify_new_lead_task, notify_new_contact_task, send_lead_confirmation_task]
-    redis_settings = RedisSettings()
+    redis_settings = RedisSettings.from_dsn(get_settings().REDIS_URL)
     max_tries = 4
     retry_jobs = True

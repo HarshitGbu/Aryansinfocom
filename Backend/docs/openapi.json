@@ -73,7 +73,9 @@
             "description": "Successful Response",
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "title": "Response List Services Api V1 Services Get"
+                }
               }
             }
           },
@@ -113,7 +115,9 @@
             "description": "Successful Response",
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "title": "Response Get Service Api V1 Services  Slug  Get"
+                }
               }
             }
           },
@@ -174,7 +178,9 @@
             "description": "Successful Response",
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "title": "Response List Studies Api V1 Case Studies Get"
+                }
               }
             }
           },
@@ -214,7 +220,9 @@
             "description": "Successful Response",
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "title": "Response Get Study Api V1 Case Studies  Slug  Get"
+                }
               }
             }
           },
@@ -243,7 +251,9 @@
             "description": "Successful Response",
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "title": "Response List Bp Api V1 Hardware Blueprints Get"
+                }
               }
             }
           }
@@ -273,7 +283,9 @@
             "description": "Successful Response",
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "title": "Response Get Bp Api V1 Hardware Blueprints  Code  Get"
+                }
               }
             }
           },
@@ -421,6 +433,7 @@
             "required": false,
             "schema": {
               "type": "string",
+              "maxLength": 200,
               "default": "",
               "title": "Q"
             }
@@ -441,7 +454,9 @@
             "description": "Successful Response",
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "title": "Response Search Api V1 Search Get"
+                }
               }
             }
           },
@@ -548,7 +563,9 @@
             "description": "Successful Response",
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "title": "Response Cal Webhook Api V1 Webhooks Cal Post"
+                }
               }
             }
           }
@@ -585,6 +602,8 @@
             "required": false,
             "schema": {
               "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
               "default": 20,
               "title": "Limit"
             }
@@ -595,6 +614,7 @@
             "required": false,
             "schema": {
               "type": "integer",
+              "minimum": 0,
               "default": 0,
               "title": "Offset"
             }
@@ -605,7 +625,9 @@
             "description": "Successful Response",
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "title": "Response List Leads Api V1 Admin Leads Get"
+                }
               }
             }
           },

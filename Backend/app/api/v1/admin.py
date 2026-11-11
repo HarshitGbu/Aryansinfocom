@@ -1,9 +1,9 @@
 from __future__ import annotations
 
 import uuid
-from typing import get_args
+from typing import Any, get_args
 
-from fastapi import APIRouter, Depends, Request
+from fastapi import APIRouter, Depends, Query, Request
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -17,8 +17,12 @@ VALID_STATUS = get_args(LeadStatus)
 
 @router.get("/admin/leads")
 async def list_leads(
-    request: Request, status: str | None = None, limit: int = 20, offset: int = 0, db: AsyncSession = Depends(get_db)
-):  # type: ignore[no-untyped-def]
+    request: Request,
+    status: str | None = None,
+    limit: int = Query(default=20, ge=1, le=100),
+    offset: int = Query(default=0, ge=0),
+    db: AsyncSession = Depends(get_db),
+) -> Any:
     try:
         require_admin(request)
     except Exception:
@@ -30,7 +34,7 @@ async def list_leads(
     q = select(LeadEstimate).order_by(LeadEstimate.created_at.desc())
     if status:
         q = q.where(LeadEstimate.status == status)
-    rows = (await db.execute(q.offset(offset).limit(min(limit, 100)))).scalars().all()
+    rows = (await db.execute(q.offset(offset).limit(limit))).scalars().all()
     items = [
         {
             "id": str(r.id),

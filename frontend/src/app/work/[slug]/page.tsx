@@ -6,23 +6,27 @@ import { ApiError } from "@/lib/api/client";
 import { Markdown } from "@/components/ui/markdown";
 import { Badge } from "@/components/ui/badge";
 import { baseMetadata } from "@/lib/seo";
+import { breadcrumbJsonLd, toJsonLd } from "@/lib/jsonld";
 import type { CaseStudy } from "@/lib/api/types";
 import { workCover } from "@/lib/work-covers";
+import { isValidSlug } from "@/lib/safe-url";
 
 export const revalidate = 60;
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<ReturnType<typeof baseMetadata>> {
   const { slug } = await params;
+  if (!isValidSlug(slug)) notFound();
   try {
     const c = await getCaseStudy(slug);
     return baseMetadata({ title: c.title, description: c.problem_statement.slice(0, 150), path: `/work/${slug}` });
   } catch {
-    return baseMetadata({ title: "Case study", description: "Case study.", path: `/work/${slug}` });
+    return baseMetadata({ title: "Case study", description: "Case studies from Aryans Infocom across custom web apps, ERP, AI tools, and office infrastructure.", path: `/work/${slug}` });
   }
 }
 
 export default async function CaseDetail({ params }: { params: Promise<{ slug: string }> }): Promise<React.JSX.Element> {
   const { slug } = await params;
+  if (!isValidSlug(slug)) notFound();
   let c: CaseStudy;
   try {
     c = await getCaseStudy(slug);
@@ -36,6 +40,16 @@ export default async function CaseDetail({ params }: { params: Promise<{ slug: s
 
   return (
     <main className="pt-28">
+      <script
+        type="application/ld+json"
+        {...toJsonLd(
+          breadcrumbJsonLd([
+            { name: "Home", path: "/" },
+            { name: "Work", path: "/work" },
+            { name: c.title, path: `/work/${slug}` },
+          ]),
+        )}
+      />
       <div className="mx-auto max-w-6xl px-5 md:px-8">
         <h1 className="text-4xl font-semibold">{c.title}</h1>
         <div className="mt-3 flex items-center gap-3 text-sm text-text-muted">

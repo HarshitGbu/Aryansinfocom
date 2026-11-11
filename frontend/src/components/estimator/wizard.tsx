@@ -8,6 +8,8 @@ import type { EstimatorService } from "@/lib/api/types";
 import { estimatorServiceMeta } from "@/content/pillars";
 import { LiveSummary } from "@/components/estimator/live-summary";
 import { submitToWeb3Forms } from "@/lib/web3forms";
+import { safeHref } from "@/lib/safe-url";
+import { isValidEmail } from "@/lib/validation";
 import { useState } from "react";
 import Link from "next/link";
 import { cn } from "@/lib/cn";
@@ -57,12 +59,34 @@ function WizardInner(): React.JSX.Element {
   }
 
   async function send(): Promise<void> {
-    setSending(true);
     setError(null);
+    // Honeypot: silently advance to fake submitted state without contacting Web3Forms.
+    if (store.contact.website.trim() !== "") {
+      store.setStep(6);
+      try {
+        sessionStorage.removeItem("estimator:v1");
+      } catch {
+        /* ignore */
+      }
+      return;
+    }
+    if (store.contact.client_name.trim().length < 2) {
+      setError("Please enter your name.");
+      return;
+    }
+    if (!isValidEmail(store.contact.client_email)) {
+      setError("Enter a valid email address.");
+      return;
+    }
+    if (!store.contact.consent) {
+      setError("Consent is required.");
+      return;
+    }
+    setSending(true);
     try {
-      await submitToWeb3Forms(`New project estimate request from ${store.contact.client_name}`, {
-        name: store.contact.client_name,
-        email: store.contact.client_email,
+      await submitToWeb3Forms(`New project estimate request from ${store.contact.client_name.trim()}`, {
+        name: store.contact.client_name.trim(),
+        email: store.contact.client_email.trim(),
         company: store.contact.company_name || "",
         phone: store.contact.phone_number || "",
         notes: store.contact.notes || "",
@@ -228,12 +252,25 @@ function WizardInner(): React.JSX.Element {
             <h2 id="s5" ref={headingRef} tabIndex={-1} className="text-2xl font-semibold">Your details</h2>
             <div className="mt-6 space-y-4">
               <label className="block text-sm">Name*
-                <input value={store.contact.client_name} onChange={(e) => store.setContact({ client_name: e.target.value })}
-                  className="mt-1 w-full rounded-[8px] border border-white/10 bg-surface-2 px-3 py-2.5" />
+                <input
+                  value={store.contact.client_name}
+                  onChange={(e) => {
+                    if (error) setError(null);
+                    store.setContact({ client_name: e.target.value });
+                  }}
+                  className="mt-1 w-full rounded-[8px] border border-white/10 bg-surface-2 px-3 py-2.5"
+                />
               </label>
               <label className="block text-sm">Email*
-                <input type="email" value={store.contact.client_email} onChange={(e) => store.setContact({ client_email: e.target.value })}
-                  className="mt-1 w-full rounded-[8px] border border-white/10 bg-surface-2 px-3 py-2.5" />
+                <input
+                  type="email"
+                  value={store.contact.client_email}
+                  onChange={(e) => {
+                    if (error) setError(null);
+                    store.setContact({ client_email: e.target.value });
+                  }}
+                  className="mt-1 w-full rounded-[8px] border border-white/10 bg-surface-2 px-3 py-2.5"
+                />
               </label>
               <label className="block text-sm">Company
                 <input value={store.contact.company_name} onChange={(e) => store.setContact({ company_name: e.target.value })}
@@ -263,7 +300,7 @@ function WizardInner(): React.JSX.Element {
             <p className="mt-3 text-text-muted">Book a call to confirm scope.</p>
             <div className="mt-6 flex gap-3">
               <Link
-                href={store.bookingUrl ?? "/contact#book"}
+                href={safeHref(store.bookingUrl, "/contact#book")}
                 className="rounded-[12px] bg-white px-5 py-2.5 text-sm font-semibold text-black"
               >
                 Book Discovery Call
@@ -293,7 +330,12 @@ function WizardInner(): React.JSX.Element {
             ) : (
               <button
                 onClick={() => void send()}
-                disabled={sending || !store.contact.client_name || !store.contact.client_email || !store.contact.consent}
+                disabled={
+                  sending ||
+                  !store.contact.client_name.trim() ||
+                  !store.contact.client_email.trim() ||
+                  !store.contact.consent
+                }
                 className="rounded-[12px] bg-white px-5 py-2.5 text-sm font-semibold text-black disabled:opacity-50"
               >
                 {sending ? "Sending…" : "Send estimate"}

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { siteConfig } from "@/content/site";
 import { submitToWeb3Forms } from "@/lib/web3forms";
+import { isValidEmail } from "@/lib/validation";
 
 interface Fields {
   name: string;
@@ -39,7 +40,7 @@ export function ContactForm(): React.JSX.Element {
   function validate(): boolean {
     const e: Partial<Record<keyof Fields, string>> = {};
     if (values.name.trim().length < 2) e.name = "Please enter your name.";
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(values.email)) e.email = "Enter a valid email address.";
+    if (!isValidEmail(values.email)) e.email = "Enter a valid email address.";
     if (values.message.trim().length < 10) e.message = "Tell us a bit more (at least 10 characters).";
     if (!values.consent) e.consent = "Consent is required.";
     setErrors(e);
@@ -49,12 +50,17 @@ export function ContactForm(): React.JSX.Element {
   async function onSubmit(ev: React.FormEvent<HTMLFormElement>): Promise<void> {
     ev.preventDefault();
     setServerError(null);
+    // Silently short-circuit if a bot filled the honeypot before contacting Web3Forms.
+    if (values.website.trim() !== "") {
+      setSent(true);
+      return;
+    }
     if (!validate()) return;
     setSending(true);
     try {
-      await submitToWeb3Forms(`New contact form message from ${values.name}`, {
-        name: values.name,
-        email: values.email,
+      await submitToWeb3Forms(`New contact form message from ${values.name.trim()}`, {
+        name: values.name.trim(),
+        email: values.email.trim(),
         company: values.company || "",
         topic: values.topic || "",
         message: values.message,
@@ -121,6 +127,7 @@ export function ContactForm(): React.JSX.Element {
       </div>
       <input
         type="text"
+        name="website"
         tabIndex={-1}
         autoComplete="off"
         aria-hidden

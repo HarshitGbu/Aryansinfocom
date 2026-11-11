@@ -1,5 +1,7 @@
 name: ci
 on: [push, pull_request]
+permissions:
+  contents: read
 jobs:
   lint-type-test:
     runs-on: ubuntu-latest
@@ -11,16 +13,36 @@ jobs:
           POSTGRES_PASSWORD: app
           POSTGRES_DB: agency
         ports: ["5432:5432"]
-        options: --health-cmd="pg_isready -U app" --health-interval=5s --health-retries=10
+        options: >-
+          --health-cmd "pg_isready -U app -d agency"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
       redis:
         image: redis:7-alpine
         ports: ["6379:6379"]
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DATABASE_URL: postgresql+asyncpg://app:app@localhost:5432/agency
+      REDIS_URL: redis://localhost:6379/0
+      ENVIRONMENT: test
     steps:
-      - uses: actions/checkout@v4
-      - uses: astral-sh/setup-uv@v5
-      - run: uv sync --group dev
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: astral-sh/setup-uv@d4b2f3b6ecc6e67c4457f6d3e41ec42d3d0fcb86 # v5.4.2
+      - run: uv sync --frozen --group dev
       - run: uv run ruff check app tests
       - run: uv run mypy app
-      - run: uv run pytest -q
       - run: uv run python -m app.openapi_dump && git diff --exit-code docs/openapi.json
-      - run: uv pip audit || pip-audit || echo "audit skipped"
+      - run: uv run alembic upgrade head
+      - run: uv run python -m app.seed.seed
+      - run: uv run pytest -q
+      - name: Dependency audit
+        run: |
+          req_file="$(mktemp)"
+          trap 'rm -f "$req_file"' EXIT
+          uv export --frozen --no-emit-project -o "$req_file"
+          uvx pip-audit --require-hashes --disable-pip -r "$req_file"

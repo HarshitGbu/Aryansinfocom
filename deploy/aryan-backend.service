@@ -4,16 +4,20 @@ After=network.target postgresql.service redis.service
 
 [Service]
 Type=simple
-User=www-data
+User=aryan-api
+Group=aryan-api
 WorkingDirectory=/opt/aryan-infocom/Backend
-EnvironmentFile=/opt/aryan-infocom/.env
-Environment=DATABASE_URL=postgresql+asyncpg://app:app@localhost:5432/agency
-Environment=REDIS_URL=redis://localhost:6379/0
-Environment=CORS_ORIGINS=http://localhost
+EnvironmentFile=/opt/aryan-infocom/backend.env
 Environment=ENVIRONMENT=production
-ExecStart=/opt/aryan-infocom/Backend/.venv/bin/uvicorn app.main:app --host 0.0.0.0 --port 8000
+Environment=TRUSTED_PROXY_HOPS=1
+ExecStart=/opt/aryan-infocom/Backend/.venv/bin/uvicorn app.main:app --host 127.0.0.1 --port 8000
 Restart=always
 RestartSec=3
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectSystem=strict
+ProtectHome=yes
+RestrictSUIDSGID=yes
 
 [Install]
 WantedBy=multi-user.target

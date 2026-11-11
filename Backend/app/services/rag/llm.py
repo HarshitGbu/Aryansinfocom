@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import re
 
+from app.services.rag.embeddings import EmbeddingProvider
+
 
 class LLMProvider:
     async def generate(self, system: str, prompt: str, max_tokens: int = 400) -> str:
@@ -10,8 +12,10 @@ class LLMProvider:
 
 class MockLLMProvider(LLMProvider):
     async def generate(self, system: str, prompt: str, max_tokens: int = 400) -> str:
-        # extractive: first sentence-ish of context
-        m = re.search(r"Context:\s*(.+)", prompt, re.S)
+        # extractive: first sentence-ish of retrieved context
+        m = re.search(r"<retrieved_context>\s*(.*?)\s*</retrieved_context>", prompt, re.S)
+        if m is None:
+            m = re.search(r"Context:\s*(.+)", prompt, re.S)
         ctx = (m.group(1).strip() if m else prompt.strip())[:600]
         # first two sentences
         sents = re.split(r"(?<=[.!?])\s+", ctx)
@@ -65,9 +69,9 @@ def sanitize_output(text: str) -> str:
     return t
 
 
-def get_providers():  # type: ignore[no-untyped-def]
+def get_providers() -> tuple[EmbeddingProvider, LLMProvider]:
     from app.config import get_settings
-    from app.services.rag.embeddings import EmbeddingProvider, FakeEmbeddingProvider, OpenAIEmbeddingProvider
+    from app.services.rag.embeddings import FakeEmbeddingProvider, OpenAIEmbeddingProvider
 
     s = get_settings()
     if s.EMBEDDING_PROVIDER == "openai" and s.OPENAI_API_KEY:

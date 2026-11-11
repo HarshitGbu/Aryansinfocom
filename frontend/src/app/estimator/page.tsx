@@ -3,7 +3,8 @@ import { baseMetadata } from "@/lib/seo";
 
 export const metadata = baseMetadata({
   title: "Estimator",
-  description: "Estimate your project in a minute.",
+  description:
+    "Get a planning range for your custom web app, ERP, AI, or office networking project in under a minute. No signup needed — see indicative cost and timeline.",
   path: "/estimator",
 });
 

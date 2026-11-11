@@ -4,11 +4,13 @@ import { getService, getCaseStudies } from "@/lib/api/endpoints";
 import { Markdown } from "@/components/ui/markdown";
 import { CaseCard } from "@/components/work/case-card";
 import { baseMetadata } from "@/lib/seo";
+import { breadcrumbJsonLd, serviceJsonLd, toJsonLd } from "@/lib/jsonld";
 import { slugify } from "@/lib/format";
+import { isValidSlug } from "@/lib/safe-url";
 
 export const revalidate = 60;
 
-const validSlugs = ["web-apps", "erp-systems", "ai-solutions", "infrastructure"];
+const validSlugs = new Set(["web-apps", "erp-systems", "ai-solutions", "infrastructure"]);
 
 const estimateMap: Record<string, string> = {
   "web-apps": "custom_web",
@@ -24,13 +26,21 @@ const filterMap: Record<string, "web" | "erp" | "ai" | "hardware"> = {
   infrastructure: "hardware",
 };
 
+const serviceTypeMap: Record<string, string> = {
+  web: "Custom web application development",
+  erp: "Enterprise ERP systems",
+  ai: "AI and RAG solutions",
+  infrastructure: "Office networking and IT infrastructure",
+};
+
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<ReturnType<typeof baseMetadata>> {
   const { slug } = await params;
+  if (!isValidSlug(slug) || !validSlugs.has(slug)) notFound();
   try {
     const s = await getService(slug);
     return baseMetadata({ title: s.title, description: s.short_description, path: `/services/${slug}` });
   } catch {
-    return baseMetadata({ title: "Service", description: "Service detail.", path: `/services/${slug}` });
+    return baseMetadata({ title: "Service", description: "Custom software and IT infrastructure services from Aryans Infocom — web apps, ERP, AI, and networking.", path: `/services/${slug}` });
   }
 }
 
@@ -40,7 +50,7 @@ export default async function ServiceDetail({
   params: Promise<{ slug: string }>;
 }): Promise<React.JSX.Element> {
   const { slug } = await params;
-  if (!validSlugs.includes(slug)) notFound();
+  if (!isValidSlug(slug) || !validSlugs.has(slug)) notFound();
 
   let service = null;
   try {
@@ -69,6 +79,27 @@ export default async function ServiceDetail({
 
   return (
     <main className="pt-28">
+      <script
+        type="application/ld+json"
+        {...toJsonLd(
+          serviceJsonLd({
+            name: service.title,
+            description: service.short_description,
+            path: `/services/${slug}`,
+            serviceType: serviceTypeMap[service.category],
+          }),
+        )}
+      />
+      <script
+        type="application/ld+json"
+        {...toJsonLd(
+          breadcrumbJsonLd([
+            { name: "Home", path: "/" },
+            { name: "Services", path: "/services" },
+            { name: service.title, path: `/services/${slug}` },
+          ]),
+        )}
+      />
       <div className="mx-auto max-w-6xl px-5 md:px-8">
         <nav aria-label="Breadcrumb" className="text-xs text-text-faint">
           <Link href="/services" className="hover:text-text">Services</Link> / {service.title}

@@ -2,18 +2,26 @@ from __future__ import annotations
 
 import argparse
 import asyncio
+from typing import Any, cast
 
 
 async def _purge(email: str) -> dict[str, int]:
     from sqlalchemy import delete, func
+    from sqlalchemy.engine import CursorResult
 
     from app.core.db import get_session_factory
     from app.models.tables import ContactSubmission, LeadEstimate
 
     factory = get_session_factory()
     async with factory() as s:
-        r1 = await s.execute(delete(LeadEstimate).where(func.lower(LeadEstimate.client_email) == email.lower()))
-        r2 = await s.execute(delete(ContactSubmission).where(func.lower(ContactSubmission.email) == email.lower()))
+        r1 = cast(
+            CursorResult[Any],
+            await s.execute(delete(LeadEstimate).where(func.lower(LeadEstimate.client_email) == email.lower())),
+        )
+        r2 = cast(
+            CursorResult[Any],
+            await s.execute(delete(ContactSubmission).where(func.lower(ContactSubmission.email) == email.lower())),
+        )
         await s.commit()
         return {"leads": r1.rowcount or 0, "contacts": r2.rowcount or 0}
 

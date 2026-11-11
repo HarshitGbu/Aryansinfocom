@@ -1,17 +1,23 @@
 from __future__ import annotations
 
 import time
+from typing import Any
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Request
 from fastapi.responses import JSONResponse
 
 from app.schemas.requests import PromptParseRequest, RagRequest
 
 router = APIRouter(tags=["playground"])
 
+_INJECTION_REFUSAL = (
+    "I cannot process queries that contain instruction-override or prompt-injection patterns. "
+    "Please ask a question about our services or infrastructure."
+)
+
 
 @router.post("/playground/prompt-parse")
-async def prompt_parse(payload: PromptParseRequest):  # type: ignore[no-untyped-def]
+async def prompt_parse(payload: PromptParseRequest) -> JSONResponse:
     from app.services.prompt_parser import parse_prompt
 
     parsed = parse_prompt(payload.prompt)
@@ -21,7 +27,7 @@ async def prompt_parse(payload: PromptParseRequest):  # type: ignore[no-untyped-
 
 
 @router.post("/playground/rag-simulation")
-async def rag_simulation(payload: RagRequest):  # type: ignore[no-untyped-def]
+async def rag_simulation(payload: RagRequest, request: Request) -> JSONResponse:
     import hashlib
     import json as _j
     import re as _re
@@ -31,8 +37,9 @@ async def rag_simulation(payload: RagRequest):  # type: ignore[no-untyped-def]
     from app.config import get_settings
     from app.core.db import get_session_factory
     from app.core.redis import get_redis_client
+    from app.core.security import client_ip, escape_like, hash_ip
+    from app.services.prompt_parser import is_prompt_injection
 
-    # need request for IP: get from context? use payload only + budget keyed loosely
     query = _re.sub(r"[\x00-\x1f\x7f]", " ", payload.query)
     query = _re.sub(r"\s+", " ", query).strip()
     if not (3 <= len(query) <= 300):
@@ -42,6 +49,24 @@ async def rag_simulation(payload: RagRequest):  # type: ignore[no-untyped-def]
         )
     top_k = payload.top_k
     settings = get_settings()
+
+    if is_prompt_injection(query):
+        pipeline = [
+            {"stage": st, "duration_ms": 0.0, "detail": "Blocked (prompt-injection guard)"}
+            for st in ("embed_query", "vector_search", "rerank", "prompt_assembly", "generation")
+        ]
+        return JSONResponse(
+            content={
+                "success": True,
+                "retrieved_chunks": [],
+                "llm_response": _INJECTION_REFUSAL,
+                "pipeline": pipeline,
+                "total_ms": 0.0,
+                "mode": "fallback",
+            },
+            headers={"Cache-Control": "no-store"},
+        )
+
     norm = query.lower().strip()
     cache_key = f"rag:{hashlib.sha256(f'{norm}:{top_k}'.encode()).hexdigest()}"
     redis = get_redis_client()
@@ -51,43 +76,54 @@ async def rag_simulation(payload: RagRequest):  # type: ignore[no-untyped-def]
             if cached:
                 body = _j.loads(cached)
                 body["mode"] = "cached"
-                return body
+                return JSONResponse(content=body, headers={"Cache-Control": "no-store"})
         except Exception:
             pass
     total_start = time.perf_counter()
     timings: dict[str, tuple[float, str]] = {}
     # decide mode
-    live_ok = (
+    live_ok = bool(
         settings.EMBEDDING_PROVIDER == "openai"
         and settings.OPENAI_API_KEY
         and settings.LLM_PROVIDER == "anthropic"
         and settings.ANTHROPIC_API_KEY
         and settings.LLM_MODEL
     )
-    # budget check (per IP placeholder: global per query hash? use daily counter)
+    # budget check: fail closed on Redis unavailability/error; enforce per-IP + global daily cap
     over_budget = False
-    if redis is not None and live_ok:
-        try:
-            budget_key = f"rag:budget:{hashlib.sha256(b'ip-global').hexdigest()}"
-            # simplified: count all live runs
-            cnt = await redis.incr(budget_key)
-            if cnt == 1:
-                await redis.expire(budget_key, 86400)
-            if cnt > settings.RAG_DAILY_BUDGET:  # per-day cap on live runs
+    if live_ok:
+        if redis is None:
+            over_budget = True
+        else:
+            ip_hash = hash_ip(client_ip(request))
+            ip_key = f"rag:budget:ip:{ip_hash}"
+            global_key = "rag:budget:global"
+            per_ip_limit = min(20, settings.RAG_DAILY_BUDGET)
+            try:
+                ip_cnt = await redis.incr(ip_key)
+                if await redis.ttl(ip_key) == -1:
+                    await redis.expire(ip_key, 86400)
+                if ip_cnt > per_ip_limit:
+                    over_budget = True
+                else:
+                    global_cnt = await redis.incr(global_key)
+                    if await redis.ttl(global_key) == -1:
+                        await redis.expire(global_key, 86400)
+                    if global_cnt > settings.RAG_DAILY_BUDGET:
+                        over_budget = True
+            except Exception:
                 over_budget = True
-        except Exception:
-            pass
     mode = "live" if (live_ok and not over_budget) else "fallback"
-    chunks: list[dict] = []
+    chunks: list[dict[str, Any]] = []
     try:
         factory = get_session_factory()
         async with factory() as s:
             if mode == "live":
-                from app.services.rag.embeddings import get_providers as _gp
+                from app.services.rag.llm import get_providers as _gp
 
                 # actually run vector search
                 t0 = time.perf_counter()
-                emb, llm = _gp()
+                emb, _ = _gp()
                 qvec = await emb.embed(query)
                 timings["embed_query"] = ((time.perf_counter() - t0) * 1000, f"Embedded query ({len(qvec)} dims)")
                 t1 = time.perf_counter()
@@ -131,23 +167,24 @@ async def rag_simulation(payload: RagRequest):  # type: ignore[no-untyped-def]
                     if not chunks:
                         # ILIKE fallback: real lexical match — only rows sharing at
                         # least one query term; score = share of query terms matched.
+                        escaped_q = escape_like(query)
                         res2 = await s.execute(
                             text(
                                 "SELECT document_title, content_chunk, "
                                 "COALESCE(("
                                 "  SELECT COUNT(*) FROM unnest(regexp_split_to_array(lower(:q), '\\s+')) AS w"
-                                "  WHERE w <> '' AND (lower(content_chunk) LIKE '%' || w || '%' "
-                                "    OR lower(document_title) LIKE '%' || w || '%')"
+                                "  WHERE w <> '' AND (lower(content_chunk) LIKE '%' || w || '%' ESCAPE '\\' "
+                                "    OR lower(document_title) LIKE '%' || w || '%' ESCAPE '\\')"
                                 "), 0)::float / GREATEST(1, array_length(regexp_split_to_array(lower(:q), '\\s+'), 1)) AS r "
                                 "FROM ai_lab_knowledge_base "
                                 "WHERE EXISTS ("
                                 "  SELECT 1 FROM unnest(regexp_split_to_array(lower(:q), '\\s+')) AS w"
-                                "  WHERE w <> '' AND (lower(content_chunk) LIKE '%' || w || '%' "
-                                "    OR lower(document_title) LIKE '%' || w || '%')"
+                                "  WHERE w <> '' AND (lower(content_chunk) LIKE '%' || w || '%' ESCAPE '\\' "
+                                "    OR lower(document_title) LIKE '%' || w || '%' ESCAPE '\\')"
                                 ") "
                                 "ORDER BY r DESC LIMIT :k"
                             ),
-                            {"q": query, "k": top_k},
+                            {"q": escaped_q, "k": top_k},
                         )
                         rows2 = res2.fetchall()
                         chunks = [
@@ -179,7 +216,7 @@ async def rag_simulation(payload: RagRequest):  # type: ignore[no-untyped-def]
     chunks = rerank(query, chunks)
     timings["rerank"] = ((time.perf_counter() - t2) * 1000, f"Reranked {len(chunks)} chunks")
     t3 = time.perf_counter()
-    if mode == "live":
+    if mode == "live" and not is_prompt_injection(query):
         from app.services.rag.llm import get_providers, sanitize_output
         from app.services.rag.prompts import SYSTEM_PROMPT, build_prompt
 
@@ -217,7 +254,7 @@ async def rag_simulation(payload: RagRequest):  # type: ignore[no-untyped-def]
         "total_ms": total_ms,
         "mode": mode,
     }
-    if redis is not None:
+    if redis is not None and (mode == "live" or not live_ok):
         try:
             await redis.setex(cache_key, 86400, _j.dumps(body))
         except Exception:

@@ -5,12 +5,14 @@ import { deliverySteps } from "@/content/process";
 import { SpotlightCard } from "@/components/ui/spotlight-card";
 import { FooterCta } from "@/components/home/footer-cta";
 import { baseMetadata } from "@/lib/seo";
+import { breadcrumbJsonLd, toJsonLd } from "@/lib/jsonld";
 
 export const revalidate = 60;
 
 export const metadata = baseMetadata({
   title: "Services",
-  description: "Web apps, ERP systems, AI tools, and office infrastructure.",
+  description:
+    "Custom web applications, enterprise ERP systems, AI and RAG tools, and turnkey office networking and hardware — designed, built, and supported by one team.",
   path: "/services",
 });
 
@@ -31,6 +33,15 @@ export default async function ServicesPage(): Promise<React.JSX.Element> {
 
   return (
     <main className="pt-28">
+      <script
+        type="application/ld+json"
+        {...toJsonLd(
+          breadcrumbJsonLd([
+            { name: "Home", path: "/" },
+            { name: "Services", path: "/services" },
+          ]),
+        )}
+      />
       <div className="mx-auto max-w-6xl px-5 md:px-8">
         <h1 className="text-[clamp(2.5rem,6vw,4.5rem)] font-semibold leading-[1.06]">Services</h1>
         <p className="mt-4 max-w-[65ch] text-lg text-text-muted">

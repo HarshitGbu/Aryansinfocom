@@ -177,3 +177,90 @@ async def test_security_headers_and_rate_limit_headers(ac: AsyncClient) -> None:
     assert "x-request-id" in r.headers
     s = await ac.get("/api/v1/services", headers=_ip(102))
     assert "x-ratelimit-limit" in s.headers
+
+
+@pytest.mark.asyncio
+async def test_rate_limit_redis_lua_enforcement(ac: AsyncClient) -> None:
+    # /api/v1/contact allows 5/600s per IP; use a unique IP so repeated test runs stay isolated
+    b = uuid.uuid4().bytes
+    unique_ip = {"X-Forwarded-For": f"10.88.{(b[0] % 250) + 1}.{(b[1] % 250) + 1}"}
+    bad_contact = {"name": "Rate Test", "email": "rt@example.com", "message": "Testing rate limiter", "consent": False}
+    for _ in range(5):
+        resp = await ac.post("/api/v1/contact", json=bad_contact, headers=unique_ip)
+        assert resp.status_code == 422
+    limited = await ac.post("/api/v1/contact", json=bad_contact, headers=unique_ip)
+    assert limited.status_code == 429
+    assert limited.json()["error"]["code"] == "rate_limited"
+    assert "retry-after" in limited.headers
+    assert "x-request-id" in limited.headers
+    assert limited.headers.get("x-content-type-options") == "nosniff"
+
+
+@pytest.mark.asyncio
+async def test_webhook_replay_regression_and_search_wildcards(ac: AsyncClient) -> None:
+    from datetime import UTC, datetime
+
+    from app.config import get_settings
+
+    get_settings().CAL_WEBHOOK_SECRET = "test-secret-123"
+    admin_headers = {"X-Admin-Key": "test-admin-key-0123456789abcdef01"}
+
+    # Create a lead and transition it to "contacted"
+    email = f"wh-{uuid.uuid4().hex[:8]}@example.com"
+    submit_body = {
+        "client_name": "Webhook Test",
+        "client_email": email,
+        "estimate_input": {
+            "selected_services": ["custom_web"],
+            "office_parameters": {"workstations": 0, "floor_area_sqft": 0, "require_server_rack": False, "air_gapped_security": False},
+            "software_parameters": {"user_roles_count": 1, "third_party_integrations": []},
+        },
+        "consent": True,
+    }
+    created = await ac.post("/api/v1/estimate/submit", json=submit_body, headers=_ip(111))
+    assert created.status_code == 200
+    lead_id = created.json()["lead_id"]
+
+    patched = await ac.patch(f"/api/v1/admin/leads/{lead_id}", json={"status": "contacted"}, headers={**admin_headers, **_ip(112)})
+    assert patched.status_code == 200
+    assert patched.json()["lead"]["status"] == "contacted"
+
+    # First webhook: must NOT regress "contacted" -> "discovery_booked"
+    wh_payload = {
+        "type": "booking.created",
+        "attendee_email": email,
+        "createdAt": datetime.now(UTC).isoformat(),
+    }
+    raw = json.dumps(wh_payload).encode()
+    sig = hmac.new(b"test-secret-123", raw, hashlib.sha256).hexdigest()
+
+    wh1 = await ac.post(
+        "/api/v1/webhooks/cal",
+        content=raw,
+        headers={"Content-Type": "application/json", "x-cal-signature": sig, **_ip(113)},
+    )
+    assert wh1.status_code == 200
+    assert "x-ratelimit-limit" in wh1.headers
+
+    # Replay of same webhook is blocked as duplicate by Redis
+    wh2 = await ac.post(
+        "/api/v1/webhooks/cal",
+        content=raw,
+        headers={"Content-Type": "application/json", "x-cal-signature": f"sha256={sig}", **_ip(114)},
+    )
+    assert wh2.status_code == 200
+    assert wh2.json().get("duplicate") is True
+
+    # Confirm status did not regress
+    leads_resp = await ac.get("/api/v1/admin/leads?status=contacted&limit=100", headers={**admin_headers, **_ip(115)})
+    assert leads_resp.status_code == 200
+    assert any(item["id"] == lead_id and item["status"] == "contacted" for item in leads_resp.json()["leads"])
+
+    # Search & RAG lexical wildcards do not match arbitrary rows
+    ws = await ac.get("/api/v1/search?q=%25%25%25&limit=8", headers=_ip(116))
+    assert ws.status_code == 200
+    assert ws.json()["results"] == []
+
+    wrag = await ac.post("/api/v1/playground/rag-simulation", json={"query": f"%%%% ____ {uuid.uuid4().hex[:6]}", "top_k": 2}, headers=_ip(117))
+    assert wrag.status_code == 200
+    assert wrag.json()["retrieved_chunks"] == []

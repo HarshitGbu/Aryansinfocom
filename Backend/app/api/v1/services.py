@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import TYPE_CHECKING, Any
+
 from fastapi import APIRouter, Depends, HTTPException, Request, Response
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -7,10 +9,13 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.api.v1.common import etagged_json
 from app.core.db import get_db
 
+if TYPE_CHECKING:
+    from app.models.tables import Service
+
 router = APIRouter(tags=["services"])
 
 
-def _summary(row):  # type: ignore[no-untyped-def]
+def _summary(row: Service) -> dict[str, Any]:
     return {
         "id": str(row.id),
         "slug": row.slug,
@@ -25,7 +30,7 @@ def _summary(row):  # type: ignore[no-untyped-def]
 @router.get("/services")
 async def list_services(
     request: Request, response: Response, category: str | None = None, db: AsyncSession = Depends(get_db)
-):  # type: ignore[no-untyped-def]
+) -> Any:
     from app.models.tables import Service
 
     if category is not None and category not in ("web", "erp", "ai", "infrastructure"):
@@ -39,7 +44,7 @@ async def list_services(
 
 
 @router.get("/services/{slug}")
-async def get_service(slug: str, request: Request, response: Response, db: AsyncSession = Depends(get_db)):  # type: ignore[no-untyped-def]
+async def get_service(slug: str, request: Request, response: Response, db: AsyncSession = Depends(get_db)) -> Any:
     from app.models.tables import Service
 
     row = (await db.execute(select(Service).where(Service.slug == slug))).scalar_one_or_none()

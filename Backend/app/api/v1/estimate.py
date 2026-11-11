@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import hashlib
 from datetime import UTC, datetime
+from typing import Any
 
 from fastapi import APIRouter, Depends, Request
 from fastapi.responses import JSONResponse
@@ -17,7 +18,7 @@ from app.schemas.requests import ContactRequest, LeadSubmitRequest
 router = APIRouter(tags=["estimate"])
 
 
-def _pricing():  # type: ignore[no-untyped-def]
+def _pricing() -> dict[str, Any]:
     from app.services.pricing.engine import load_pricing
 
     return load_pricing(get_settings().PRICING_FILE)
@@ -140,9 +141,11 @@ async def submit(payload: LeadSubmitRequest, request: Request, db: AsyncSession 
             from arq.connections import RedisSettings
 
             pool = await create_pool(RedisSettings.from_dsn(get_settings().REDIS_URL))
-            await pool.enqueue_job("notify_new_lead_task", str(lead.id))
-            await pool.enqueue_job("send_lead_confirmation_task", str(lead.id))
-            await pool.aclose()
+            try:
+                await pool.enqueue_job("notify_new_lead_task", str(lead.id))
+                await pool.enqueue_job("send_lead_confirmation_task", str(lead.id))
+            finally:
+                await pool.aclose()
     except Exception as e:
         log.error("enqueue_failed", lead_id=str(lead.id), error=str(e)[:200])
     return {
@@ -193,8 +196,10 @@ async def contact(payload: ContactRequest, request: Request, db: AsyncSession = 
             from arq.connections import RedisSettings
 
             pool = await create_pool(RedisSettings.from_dsn(get_settings().REDIS_URL))
-            await pool.enqueue_job("notify_new_contact_task", str(row.id))
-            await pool.aclose()
+            try:
+                await pool.enqueue_job("notify_new_contact_task", str(row.id))
+            finally:
+                await pool.aclose()
     except Exception as e:
         log.error("enqueue_failed", error=str(e)[:200])
     return {"success": True, "submission_id": str(row.id)}

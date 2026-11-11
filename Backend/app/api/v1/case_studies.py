@@ -1,11 +1,16 @@
 from __future__ import annotations
 
+from typing import TYPE_CHECKING, Any
+
 from fastapi import APIRouter, Depends, HTTPException, Request, Response
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.v1.common import etagged_json
 from app.core.db import get_db
+
+if TYPE_CHECKING:
+    from app.models.tables import CaseStudy
 
 router = APIRouter(tags=["case-studies"])
 
@@ -17,14 +22,14 @@ def humanize(key: str) -> str:
     return label[:1].upper() + label[1:] if label else key
 
 
-def to_metrics(obj: dict) -> list[dict]:
+def to_metrics(obj: dict[str, Any]) -> list[dict[str, str]]:
     out = []
     for k, v in (obj or {}).items():
         out.append({"key": k, "label": humanize(k), "value": str(v)})
     return out
 
 
-def _summary(row):  # type: ignore[no-untyped-def]
+def _summary(row: CaseStudy) -> dict[str, Any]:
     m = to_metrics(row.metrics or {})
     stack = list(row.software_stack or [])
     return {
@@ -48,7 +53,7 @@ async def list_studies(
     limit: int = 12,
     offset: int = 0,
     db: AsyncSession = Depends(get_db),
-):  # type: ignore[no-untyped-def]
+) -> Any:
     from app.models.tables import CaseStudy
 
     if filter not in VALID_FILTERS:
@@ -68,7 +73,7 @@ async def list_studies(
 
 
 @router.get("/case-studies/{slug}")
-async def get_study(slug: str, request: Request, response: Response, db: AsyncSession = Depends(get_db)):  # type: ignore[no-untyped-def]
+async def get_study(slug: str, request: Request, response: Response, db: AsyncSession = Depends(get_db)) -> Any:
     from app.models.tables import CaseStudy
 
     row = (await db.execute(select(CaseStudy).where(CaseStudy.slug == slug))).scalar_one_or_none()

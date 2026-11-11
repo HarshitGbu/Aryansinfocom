@@ -4,6 +4,7 @@ import json
 import math
 import re
 from pathlib import Path
+from typing import Any, cast
 
 _INTEGRATION_RE = re.compile(r"^[a-z0-9][a-z0-9_-]{0,39}$")
 VALID_SERVICES = {
@@ -16,9 +17,9 @@ VALID_SERVICES = {
 }
 
 
-def load_pricing(path: str | Path) -> dict:
+def load_pricing(path: str | Path) -> dict[str, Any]:
     with open(path, encoding="utf-8") as f:
-        return json.load(f)
+        return cast(dict[str, Any], json.load(f))
 
 
 def round50(x: int, base: int = 50) -> int:
@@ -26,7 +27,7 @@ def round50(x: int, base: int = 50) -> int:
     return int(math.floor((x + base / 2) / base) * base)
 
 
-def validate_estimate_input(data: dict) -> dict[str, list[str]]:
+def validate_estimate_input(data: dict[str, Any]) -> dict[str, list[str]]:
     """Return field errors; empty means valid. Used by API to build 422 details."""
     errors: dict[str, list[str]] = {}
     sel = data.get("selected_services", [])
@@ -64,10 +65,10 @@ def validate_estimate_input(data: dict) -> dict[str, list[str]]:
     return errors
 
 
-def calculate(pricing: dict, req: dict) -> dict:
+def calculate(pricing: dict[str, Any], req: dict[str, Any]) -> dict[str, Any]:
     sel: list[str] = list(req.get("selected_services", []))
-    office: dict = req.get("office_parameters") or {}
-    sw: dict = req.get("software_parameters") or {}
+    office: dict[str, Any] = req.get("office_parameters") or {}
+    sw: dict[str, Any] = req.get("software_parameters") or {}
     ws: int = int(office.get("workstations", 0))
     sqft: int = int(office.get("floor_area_sqft", 0))
     rack: bool = bool(office.get("require_server_rack", False))
@@ -147,7 +148,7 @@ def calculate(pricing: dict, req: dict) -> dict:
     total_min = sw_min_r + hw_min_r + ai_min_r
     total_max = sw_max_r + hw_max_r + ai_max_r
 
-    breakdown: dict = {}
+    breakdown: dict[str, dict[str, int]] = {}
     if sw_max_r > 0:
         breakdown["software_development"] = {"min": sw_min_r, "max": sw_max_r}
     if hw_max_r > 0:

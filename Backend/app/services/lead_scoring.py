@@ -1,8 +1,10 @@
 from __future__ import annotations
 
+from typing import Any
+
 
 def score_lead(
-    estimate: dict,
+    estimate: dict[str, Any],
     company_name: str | None,
     phone_number: str | None,
     notes: str | None,

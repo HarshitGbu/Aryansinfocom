@@ -1,0 +1,22 @@
+[Unit]
+Description=Aryans Infocom background worker (arq)
+After=network.target postgresql.service redis.service
+
+[Service]
+Type=simple
+User=aryan-api
+Group=aryan-api
+WorkingDirectory=/opt/aryan-infocom/Backend
+EnvironmentFile=/opt/aryan-infocom/backend.env
+Environment=ENVIRONMENT=production
+ExecStart=/opt/aryan-infocom/Backend/.venv/bin/arq app.workers.main.WorkerSettings
+Restart=always
+RestartSec=3
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectSystem=strict
+ProtectHome=yes
+RestrictSUIDSGID=yes
+
+[Install]
+WantedBy=multi-user.target

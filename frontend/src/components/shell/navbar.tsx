@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { motion } from "framer-motion";
@@ -89,7 +90,14 @@ export function Navbar(): React.JSX.Element {
           )}
         >
           <Link href="/" className="flex items-center gap-2 text-sm font-semibold">
-            <span aria-hidden className="inline-block h-2.5 w-2.5 rotate-45 bg-white" />
+            <Image
+              src="/logo.png"
+              alt=""
+              width={32}
+              height={32}
+              priority
+              className="h-8 w-8 rounded-[8px]"
+            />
             {siteConfig.name}
           </Link>
           <div className="hidden items-center gap-1 md:flex">
@@ -169,7 +177,16 @@ export function Navbar(): React.JSX.Element {
           aria-label="Menu"
         >
           <div className="flex items-center justify-between px-5 py-5">
-            <span className="text-sm font-semibold">{siteConfig.name}</span>
+            <span className="flex items-center gap-2 text-sm font-semibold">
+              <Image
+                src="/logo.png"
+                alt=""
+                width={28}
+                height={28}
+                className="h-7 w-7 rounded-[7px]"
+              />
+              {siteConfig.name}
+            </span>
             <button
               type="button"
               aria-label="Close menu"

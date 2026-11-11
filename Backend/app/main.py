@@ -57,29 +57,32 @@ async def lifespan(app: FastAPI):  # type: ignore[no-untyped-def]
 def create_app() -> FastAPI:
     settings = get_settings()
     configure_logging(settings.ENVIRONMENT)
-    app = FastAPI(title="Agency API", version=settings.version, lifespan=lifespan)
-    app.middleware("http")(rate_limit_middleware)
-    app.add_middleware(RequestIDMiddleware)
-    app.add_middleware(SecurityHeadersMiddleware)
-    app.add_middleware(AccessLogMiddleware)
+    is_prod = settings.ENVIRONMENT == "production"
+    app = FastAPI(
+        title="Agency API",
+        version=settings.version,
+        lifespan=lifespan,
+        docs_url=None if is_prod else "/docs",
+        redoc_url=None if is_prod else "/redoc",
+        openapi_url=None if is_prod else "/openapi.json",
+    )
+    # Starlette runs middleware added LAST as OUTERMOST; register inner -> outer:
+    # CORSMiddleware -> RequestIDMiddleware -> SecurityHeadersMiddleware
+    # -> AccessLogMiddleware -> rate_limit_middleware -> BodyLimitMiddleware -> Router
     app.add_middleware(BodyLimitMiddleware, max_bytes=65536)
+    app.middleware("http")(rate_limit_middleware)
+    app.add_middleware(AccessLogMiddleware)
+    app.add_middleware(SecurityHeadersMiddleware)
+    app.add_middleware(RequestIDMiddleware)
     app.add_middleware(
         CORSMiddleware,
         allow_origins=settings.cors_origins,
         allow_methods=["GET", "POST", "PATCH", "OPTIONS"],
-        allow_headers=["*"],
+        allow_headers=["Content-Type", "X-Request-ID"],
         allow_credentials=False,
     )
     install_exception_handlers(app)
     app.include_router(router)
-
-    @app.middleware("http")
-    async def _hsts(request, call_next):  # type: ignore[no-untyped-def]
-        resp = await call_next(request)
-        if get_settings().ENVIRONMENT == "production":
-            resp.headers.setdefault("Strict-Transport-Security", "max-age=63072000; includeSubDomains")
-        return resp
-
     return app
 
 

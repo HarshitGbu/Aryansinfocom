@@ -1,9 +1,10 @@
 from __future__ import annotations
 
 import re
+from typing import Any
 
 
-def rerank(query: str, chunks: list[dict]) -> list[dict]:
+def rerank(query: str, chunks: list[dict[str, Any]]) -> list[dict[str, Any]]:
     qwords = set(re.findall(r"[a-z0-9]+", query.lower()))
     out = []
     for c in chunks:
@@ -16,7 +17,7 @@ def rerank(query: str, chunks: list[dict]) -> list[dict]:
     return out
 
 
-def extractive_answer(chunks: list[dict]) -> str:
+def extractive_answer(chunks: list[dict[str, Any]]) -> str:
     if not chunks:
         return "The provided context does not contain the answer."
     top = chunks[0]["chunk"].strip()

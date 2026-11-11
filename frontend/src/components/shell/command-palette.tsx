@@ -12,6 +12,7 @@ import { usePaletteStore } from "@/lib/stores/palette-store";
 import { search } from "@/lib/api/endpoints";
 import { useDebouncedValue } from "@/lib/hooks/use-debounced-value";
 import { siteConfig } from "@/content/site";
+import { safeInternalPath } from "@/lib/safe-url";
 
 interface Item {
   id: string;
@@ -91,7 +92,7 @@ export function CommandPalette(): React.JSX.Element | null {
   function go(item: { href?: string; run?: () => void }): void {
     setOpen(false);
     if (item.run) item.run();
-    else if (item.href) router.push(item.href);
+    else if (item.href) router.push(safeInternalPath(item.href));
   }
 
   if (!mounted) return null;
@@ -133,7 +134,7 @@ export function CommandPalette(): React.JSX.Element | null {
               <Command.Item
                 key={`${r.type}:${r.href}`}
                 value={`${r.title} ${r.subtitle ?? ""}`}
-                onSelect={() => go({ href: r.href })}
+                onSelect={() => go({ href: safeInternalPath(r.href) })}
                 className={row}
               >
                 <Search size={16} className="text-text-muted" aria-hidden />

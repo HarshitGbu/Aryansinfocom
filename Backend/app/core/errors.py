@@ -1,13 +1,15 @@
 from __future__ import annotations
 
+from typing import Any
+
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 
-def _details_from_validation(exc: RequestValidationError) -> dict:
-    details: dict = {}
+def _details_from_validation(exc: RequestValidationError) -> dict[str, Any]:
+    details: dict[str, Any] = {}
     try:
         errs = exc.errors()
         fld: dict[str, list[str]] = {}

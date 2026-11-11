@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import re
+from typing import Any
 
 KEYWORDS = {
     "vlan",
@@ -86,6 +87,10 @@ INJECTION_RES = [
     re.compile(r"reveal .*prompt", re.I),
 ]
 
+
+def is_prompt_injection(text: str) -> bool:
+    return any(r.search(text) for r in INJECTION_RES)
+
 INTENT_KEYWORDS: dict[str, set[str]] = {
     "network_design": {"vlan", "firewall", "wi-fi", "wifi", "vpn", "subnet", "switch", "cabling", "rack", "network"},
     "ai_deployment": {"gpu", "llm", "rag", "inference", "air-gapped", "on-premise", "model"},
@@ -94,11 +99,11 @@ INTENT_KEYWORDS: dict[str, set[str]] = {
 }
 
 
-def parse_prompt(prompt: str) -> dict:
+def parse_prompt(prompt: str) -> dict[str, Any]:
     text = prompt.strip()
     # tokens
     parts = re.findall(r"[A-Za-z0-9_@.\-]+|[^\s\w]", text)
-    entities: list[dict] = []
+    entities: list[dict[str, str]] = []
     seen: set[tuple[str, str]] = set()
 
     def add_entity(t: str, typ: str) -> None:
@@ -109,7 +114,7 @@ def parse_prompt(prompt: str) -> dict:
 
     for pat, typ in HARDWARE_RE + NETWORK_RES + SOFTWARE_RES + COMPLIANCE_RES:
         for m in pat.finditer(text):
-            add_entity(m.group(0), typ)  # type: ignore[arg-type]
+            add_entity(m.group(0), typ)
     for m in QTY_RE.finditer(text):
         add_entity(m.group(0).strip(), "quantity")
 

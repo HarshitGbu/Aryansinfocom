@@ -1,6 +1,7 @@
 import { ApiError, request, isMockingEnabled } from "@/lib/api/client";
 import * as mocks from "@/lib/api/mocks";
 import { findStaticCaseStudy, staticCaseStudyList } from "@/lib/api/static-case-studies";
+import { isValidBlueprintCode, isValidSlug } from "@/lib/safe-url";
 import type {
   CaseStudyFilter,
   ContactRequest,
@@ -23,7 +24,7 @@ import type {
 
 export async function getServices(category?: ServiceCategory): Promise<ServiceSummary[]> {
   if (isMockingEnabled()) return mocks.mockServices(category);
-  const q = category ? `?category=${category}` : "";
+  const q = category ? `?category=${encodeURIComponent(category)}` : "";
   const data = await request<{ success: true; services: ServiceSummary[] }>(
     `/services${q}`,
     { method: "GET", revalidate: 60 },
@@ -32,9 +33,12 @@ export async function getServices(category?: ServiceCategory): Promise<ServiceSu
 }
 
 export async function getService(slug: string): Promise<Service> {
+  if (!isValidSlug(slug)) {
+    throw new ApiError({ status: 404, code: "not_found", message: "Service not found" });
+  }
   if (isMockingEnabled()) return mocks.mockService(slug);
   const data = await request<{ success: true; service: Service }>(
-    `/services/${slug}`,
+    `/services/${encodeURIComponent(slug)}`,
     { method: "GET", revalidate: 60 },
   );
   return data.service;
@@ -73,11 +77,14 @@ export async function getCaseStudies(params?: {
 }
 
 export async function getCaseStudy(slug: string): Promise<CaseStudy> {
+  if (!isValidSlug(slug)) {
+    throw new ApiError({ status: 404, code: "not_found", message: "Case study not found" });
+  }
   if (isMockingEnabled()) return mocks.mockCaseStudy(slug);
   let data: { success: true; case_study: CaseStudy };
   try {
     data = await request<{ success: true; case_study: CaseStudy }>(
-      `/case-studies/${slug}`,
+      `/case-studies/${encodeURIComponent(slug)}`,
       { method: "GET", revalidate: 60 },
     );
   } catch (e) {
@@ -95,9 +102,12 @@ export async function getCaseStudy(slug: string): Promise<CaseStudy> {
 }
 
 export async function getBlueprint(code: string): Promise<HardwareBlueprint> {
+  if (!isValidBlueprintCode(code)) {
+    throw new ApiError({ status: 404, code: "not_found", message: "Blueprint not found" });
+  }
   if (isMockingEnabled()) return mocks.mockBlueprint(code);
   const data = await request<{ success: true; blueprint: HardwareBlueprint }>(
-    `/hardware-blueprints/${code}`,
+    `/hardware-blueprints/${encodeURIComponent(code)}`,
     { method: "GET", revalidate: 60 },
   );
   return data.blueprint;

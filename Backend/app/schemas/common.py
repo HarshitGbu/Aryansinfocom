@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Literal
+from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -79,7 +79,7 @@ class NetworkLink(StrictBase):
     to: str
     policy: str
 
-    def model_dump(self, **kwargs):  # type: ignore[override]
+    def model_dump(self, **kwargs: Any) -> dict[str, Any]:
         kwargs.setdefault("by_alias", True)
         return super().model_dump(**kwargs)
 
@@ -93,7 +93,7 @@ class BomItem(StrictBase):
 class HardwareBlueprintOut(StrictBase):
     blueprint_code: str
     tier_name: str
-    network_architecture: dict  # {zones, links} validated loosely; detail checked in tests
+    network_architecture: dict[str, Any]  # {zones, links} validated loosely; detail checked in tests
     hardware_bom: list[BomItem]
     recommended_software_integrations: list[str]
     base_estimated_cost: int
@@ -127,7 +127,7 @@ class EstimateResult(StrictBase):
     model_config = ConfigDict(extra="forbid")
     cost_range_usd: Range
     timeline_weeks: Range
-    breakdown: dict
+    breakdown: dict[str, Any]
     recommended_blueprint: str | None
     ai_deployment_type: AiDeploymentType
     assumptions: list[str]
